@@ -7,3 +7,9 @@ __pycache__/
 data/learning.db
 data/backups/*.db
 .DS_Store
+# Internal agent work-memory notes -- not product source, may contain
+# session-internal context. Was accidentally committed once (see git log);
+# this stops any further files under here from being tracked. Existing
+# committed history is left untouched pending an explicit decision from
+# the repo owner on whether to rewrite it.
+.workbuddy/
