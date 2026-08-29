@@ -186,9 +186,19 @@ class ReviewService:
         for state in ranked:
             if len(selected) >= max_items:
                 break
-            if elapsed_seconds >= max_time_seconds:
+            # Check the budget *before* committing to an item: adding this
+            # item must not push elapsed_seconds past max_time_seconds.
+            # The one exception is an empty batch -- if even a single due
+            # item's own cost exceeds the whole budget, we still surface
+            # that one item (it carries its real reason) rather than
+            # silently returning an empty batch and deadlocking review
+            # forever; no further item is added after it, since the
+            # budget is already exhausted.
+            if elapsed_seconds + per_item_seconds > max_time_seconds and selected:
                 break
             _, reason = priority_and_reason(state)
             selected.append(SelectedItem(item_id=state.item_id, reason=reason))
             elapsed_seconds += per_item_seconds
+            if elapsed_seconds >= max_time_seconds:
+                break
         return selected

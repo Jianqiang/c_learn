@@ -249,14 +249,43 @@ def test_select_batch_stops_at_max_review_items(service, make_item):
 
 
 def test_select_batch_stops_at_max_review_time(service, make_item):
-    # Force a large per-item cost so the time budget triggers before the
-    # item-count budget does.
+    """A batch must never let the *next* item push elapsed time over the
+    20-minute budget. With per_item=401s (MAX_REVIEW_TIME_SECONDS//3+1),
+    2 items fit at 802s but a 3rd would reach 1203s > 1200s budget, so
+    the batch must stop at 2, not 3.
+    """
     per_item = MAX_REVIEW_TIME_SECONDS // 3 + 1
     for i in range(6):
         item_id, _ = make_item(concept_slug=f"c{i}", concept_name=f"Concept {i}")
         service.get_or_create(item_id)
     result = service.select_batch(now=NOW, per_item_seconds=per_item)
-    assert len(result) == 3
+    assert len(result) == 2
+
+
+def test_select_batch_never_exceeds_time_budget_when_it_fits_exactly(service, make_item):
+    """Boundary case: per_item * n == max_time_seconds exactly must still
+    include the n-th item (no off-by-one on the inclusive boundary)."""
+    per_item = MAX_REVIEW_TIME_SECONDS // 4  # 4 items exactly fill the budget
+    for i in range(6):
+        item_id, _ = make_item(concept_slug=f"c{i}", concept_name=f"Concept {i}")
+        service.get_or_create(item_id)
+    result = service.select_batch(now=NOW, per_item_seconds=per_item)
+    assert len(result) == 4
+
+
+def test_select_batch_single_oversized_item_is_still_selected_alone(service, make_item):
+    """If a single due item's own cost already exceeds the whole time
+    budget, it should still be surfaced alone (with its real reason)
+    instead of returning an empty batch and deadlocking review forever.
+    No second item may be added after it since the budget is exhausted.
+    """
+    item_id, _ = make_item(concept_slug="c1")
+    other_id, _ = make_item(concept_slug="c2", concept_name="Concept 2")
+    service.get_or_create(item_id)
+    service.get_or_create(other_id)
+    oversized_seconds = MAX_REVIEW_TIME_SECONDS + 1
+    result = service.select_batch(now=NOW, per_item_seconds=oversized_seconds)
+    assert len(result) == 1
 
 
 def test_select_batch_excludes_leeched_items(service, make_item):
