@@ -18,7 +18,15 @@ python -m pip install -r requirements-lock.txt   # pins exact versions used in d
 `requirements-lock.txt` is a `pip freeze` snapshot of the environment the
 test suite was last verified against (pytest, sympy, pint, typer, pyyaml
 + transitive deps). `pyproject.toml` lists the abstract/minimum
-dependency ranges; the lock file is what actually reproduces a clean run.
+dependency ranges; the lock file pins the exact versions that were last
+verified to work, given a matching Python version and platform.
+
+**Reproducibility caveat**: this is a version-pin snapshot, not a
+hermetic lock. It does not pin the Python/pip version, does not use
+platform markers, does not pin package hashes, and does not lock build
+dependencies. In practice it reproduces the verified dependency versions
+on a similar Python 3.11+ environment on the same OS family — it is not
+a guarantee of bit-for-bit reproducibility across arbitrary machines.
 
 ## Running tests
 
@@ -27,7 +35,7 @@ source .venv/bin/activate
 python -m pytest -q
 ```
 
-As of the last verified run: **128/128 tests passing**. Re-run the
+As of the last verified run: **133/133 tests passing**. Re-run the
 command above yourself before trusting this number — it can drift with
 every commit.
 
@@ -63,7 +71,10 @@ Core backend layers, each with its own TDD suite:
 - Applications & concept status evidence gates (USABLE/STABLE/RETIRED)
 - Next Best Actions recommendation service (P1–P4 rules)
 - Backup / export commands
-- CLI (Typer) wiring for `learn` subcommands
+- CLI (Typer) wiring for `learn` subcommands — `pyproject.toml` already
+  declares the `learn` console-script entry point ahead of time, but
+  `learning_os/cli.py` does not exist yet, so running `learn --help`
+  will fail with `ModuleNotFoundError` until this lands.
 - Seed vertical-slice content (YAML) + loader
 - End-to-end integration test (full M0 acceptance flow)
 
