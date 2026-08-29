@@ -8,7 +8,12 @@ import sqlite3
 
 import pytest
 
-from learning_os.db import CURRENT_SCHEMA_VERSION, get_schema_version, init_db
+from learning_os.db import (
+    CURRENT_SCHEMA_VERSION,
+    _migration_001_initial_schema,
+    get_schema_version,
+    init_db,
+)
 
 EXPECTED_TABLES = {
     "schema_migrations",
@@ -105,3 +110,126 @@ def test_status_events_table_has_generic_entity_columns(db_path):
         assert row == ("concept", 1, "USABLE")
     finally:
         conn.close()
+
+
+# ---------------------------------------------------------------------------
+# Real v1 -> v2 upgrade path (architect review: prior tests only ever built
+# a fresh DB straight to v2, never exercised init_db() actually upgrading an
+# existing v1 database on disk).
+# ---------------------------------------------------------------------------
+
+def _build_v1_database(db_path) -> None:
+    """Construct a database at exactly schema v1: apply only migration 001
+    (no ladder_rung/outcome_history columns on review_state yet) and record
+    schema_migrations version=1, bypassing init_db() so this fixture stays
+    correct even if init_db()'s own migration list changes.
+    """
+    conn = sqlite3.connect(str(db_path))
+    conn.execute("PRAGMA foreign_keys = ON")
+    _migration_001_initial_schema(conn)
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS schema_migrations ("
+        "version INTEGER PRIMARY KEY, "
+        "applied_at TEXT NOT NULL DEFAULT (datetime('now')))"
+    )
+    conn.execute("INSERT INTO schema_migrations (version) VALUES (1)")
+    conn.commit()
+    conn.close()
+
+
+def _seed_v1_review_state_row(db_path) -> None:
+    """Insert one real, pre-existing review_state row (plus its module/
+    concept/item parents) using only v1 columns, so the upgrade test can
+    assert this data survives the v1->v2 migration untouched.
+    """
+    conn = sqlite3.connect(str(db_path))
+    conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute(
+        "INSERT INTO modules (slug, name, phase, status) "
+        "VALUES ('m1', 'Module One', 1, 'AVAILABLE')"
+    )
+    conn.execute(
+        "INSERT INTO concepts (module_id, slug, name) VALUES (1, 'c1', 'Concept One')"
+    )
+    conn.execute(
+        "INSERT INTO items (concept_id, type, prompt, grading_mode, reference_answer) "
+        "VALUES (1, 'numeric', 'q', 'deterministic', '1')"
+    )
+    conn.execute(
+        "INSERT INTO review_state "
+        "(item_id, due_at, last_outcome, active, lapse_count, failure_streak) "
+        "VALUES (1, '2026-01-05 00:00:00', 'PASS', 1, 0, 0)"
+    )
+    conn.commit()
+    conn.close()
+
+
+def test_v1_database_has_no_ladder_columns_before_upgrade(db_path):
+    """Sanity check that the v1 fixture really is v1 (no v2 columns yet),
+    so the upgrade assertions below are testing a real transition and not
+    a database that was already at v2."""
+    _build_v1_database(db_path)
+    conn = sqlite3.connect(str(db_path))
+    try:
+        columns = {row[1] for row in conn.execute("PRAGMA table_info(review_state)")}
+        assert "ladder_rung" not in columns
+        assert "outcome_history" not in columns
+        assert get_schema_version(conn) == 1
+    finally:
+        conn.close()
+
+
+def test_init_db_upgrades_v1_database_to_current_version(db_path):
+    _build_v1_database(db_path)
+    _seed_v1_review_state_row(db_path)
+
+    conn = init_db(db_path)
+    try:
+        assert get_schema_version(conn) == CURRENT_SCHEMA_VERSION
+
+        columns = {row[1] for row in conn.execute("PRAGMA table_info(review_state)")}
+        assert "ladder_rung" in columns
+        assert "outcome_history" in columns
+
+        row = conn.execute(
+            "SELECT item_id, due_at, last_outcome, active, ladder_rung, "
+            "outcome_history FROM review_state WHERE item_id=1"
+        ).fetchone()
+        # Pre-existing v1 data must survive the upgrade untouched...
+        assert row[0] == 1
+        assert row[1] == "2026-01-05 00:00:00"
+        assert row[2] == "PASS"
+        assert row[3] == 1
+        # ...and the new v2 columns must backfill to sane defaults rather
+        # than NULL, since ReviewService reads them on every load.
+        assert row[4] == 0  # ladder_rung default
+        assert row[5] == "[]"  # outcome_history default
+    finally:
+        conn.close()
+
+
+def test_init_db_upgrade_is_idempotent_on_second_call(db_path):
+    """Upgrading v1->v2 must not re-run if called twice, and must not
+    disturb data added after the first upgrade."""
+    _build_v1_database(db_path)
+    _seed_v1_review_state_row(db_path)
+
+    conn = init_db(db_path)
+    conn.execute(
+        "UPDATE review_state SET ladder_rung=2 WHERE item_id=1"
+    )
+    conn.commit()
+    conn.close()
+
+    conn2 = init_db(db_path)
+    try:
+        assert get_schema_version(conn2) == CURRENT_SCHEMA_VERSION
+        row = conn2.execute(
+            "SELECT ladder_rung FROM review_state WHERE item_id=1"
+        ).fetchone()
+        # Second init_db() call must not re-run migration 002 (which would
+        # error on "duplicate column" or, if guarded, would be a silent
+        # no-op) nor reset ladder_rung back to its default.
+        assert row[0] == 2
+    finally:
+        conn2.close()
