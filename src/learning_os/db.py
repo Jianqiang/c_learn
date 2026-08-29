@@ -17,7 +17,7 @@ import sqlite3
 from pathlib import Path
 from typing import Callable
 
-CURRENT_SCHEMA_VERSION = 1
+CURRENT_SCHEMA_VERSION = 2
 
 
 def _migration_001_initial_schema(conn: sqlite3.Connection) -> None:
@@ -215,9 +215,32 @@ def _migration_001_initial_schema(conn: sqlite3.Connection) -> None:
     )
 
 
+def _migration_002_review_state_scheduler_bookkeeping(conn: sqlite3.Connection) -> None:
+    """The baseline scheduler (learning_os.schedulers.baseline) needs two
+    pieces of state that migration 001 didn't persist, so a second
+    record_outcome() call couldn't tell where the ladder actually was:
+
+    - ladder_rung: current position on the 1/3/7/14/30-day ladder.
+    - outcome_history: last few real outcomes (JSON array of strings),
+      used for the "4-of-5 non-PASS" leech window check.
+
+    Without these, ReviewService re-derived a fresh ReviewState(ladder_rung=0,
+    outcome_history=()) from the DB row on every call, so PASS always
+    scheduled 1 day out instead of advancing 1 -> 3 -> 7 -> 14 -> 30, and the
+    leech window never accumulated across separate record_outcome() calls.
+    """
+    conn.executescript(
+        """
+        ALTER TABLE review_state ADD COLUMN ladder_rung INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE review_state ADD COLUMN outcome_history TEXT NOT NULL DEFAULT '[]';
+        """
+    )
+
+
 # Ordered list of migrations. Each entry's index+1 is its schema version.
 _MIGRATIONS: list[Callable[[sqlite3.Connection], None]] = [
     _migration_001_initial_schema,
+    _migration_002_review_state_scheduler_bookkeeping,
 ]
 
 
