@@ -17,6 +17,17 @@ record_attempt() is a convenience one-shot wrapper around
 start_attempt()+submit_attempt() for callers (e.g. deterministic drills)
 that have the full outcome ready immediately and don't need the two-phase
 durability window.
+
+Immutability of submitted attempts (architect review, 2026-08-29):
+submit_attempt() only ever fills in an attempt whose submitted_at is still
+NULL -- once an attempt has been submitted, calling submit_attempt() again
+raises AttemptAlreadySubmittedError instead of silently rewriting the
+outcome. attempts is an audit trail (evaluator_kind/evaluator_version/
+human_override exist specifically to explain *why* an outcome is what it
+is); a second unconditional UPDATE would let a PASS become a MISS with no
+record it was ever anything else. The only sanctioned way to correct an
+already-submitted attempt is override_attempt(), which always records
+human_override=True so the correction itself is visible in the data.
 """
 from __future__ import annotations
 
@@ -26,6 +37,12 @@ from typing import Optional
 
 VALID_SESSION_TYPES = {"drill", "learn", "recall", "review", "apply"}
 VALID_OUTCOMES = {"PASS", "PARTIAL", "MISS", "MISCONCEPTION", "SKIPPED"}
+
+
+class AttemptAlreadySubmittedError(Exception):
+    """Raised when submit_attempt() is called on an attempt that already
+    has a submitted_at timestamp. Use override_attempt() to correct an
+    already-submitted outcome explicitly."""
 
 
 @dataclass
@@ -187,7 +204,12 @@ class SessionService:
     ) -> Attempt:
         if outcome not in VALID_OUTCOMES:
             raise ValueError(f"invalid outcome: {outcome!r}")
-        self.get_attempt(attempt_id)  # raises KeyError if missing
+        existing = self.get_attempt(attempt_id)  # raises KeyError if missing
+        if existing.submitted_at is not None:
+            raise AttemptAlreadySubmittedError(
+                f"attempt {attempt_id} was already submitted at "
+                f"{existing.submitted_at}; use override_attempt() to correct it"
+            )
         self._conn.execute(
             "UPDATE attempts SET submitted_at=datetime('now'), answer=?, "
             "outcome=?, confidence=?, latency_seconds=?, misconception_code=?, "
@@ -197,6 +219,48 @@ class SessionService:
                 answer, outcome, confidence, latency_seconds, misconception_code,
                 feedback, evaluator_kind, evaluator_version, int(human_override),
                 attempt_id,
+            ),
+        )
+        self._conn.commit()
+        return self.get_attempt(attempt_id)
+
+    def override_attempt(
+        self,
+        attempt_id: int,
+        *,
+        answer: Optional[str] = None,
+        outcome: str,
+        confidence: Optional[float] = None,
+        latency_seconds: Optional[float] = None,
+        misconception_code: Optional[str] = None,
+        feedback: Optional[str] = None,
+        evaluator_kind: Optional[str] = None,
+        evaluator_version: Optional[str] = None,
+    ) -> Attempt:
+        """Explicitly correct an already-submitted attempt's outcome.
+
+        Unlike submit_attempt(), this requires the attempt to already be
+        submitted (raises ValueError otherwise -- use submit_attempt() for
+        the first submission) and always records human_override=True, so
+        the correction is visible in the audit trail rather than looking
+        like an ordinary first-time grading result.
+        """
+        if outcome not in VALID_OUTCOMES:
+            raise ValueError(f"invalid outcome: {outcome!r}")
+        existing = self.get_attempt(attempt_id)  # raises KeyError if missing
+        if existing.submitted_at is None:
+            raise ValueError(
+                f"attempt {attempt_id} was never submitted; "
+                "use submit_attempt() for the first submission"
+            )
+        self._conn.execute(
+            "UPDATE attempts SET answer=?, outcome=?, confidence=?, "
+            "latency_seconds=?, misconception_code=?, feedback=?, "
+            "evaluator_kind=?, evaluator_version=?, human_override=1 "
+            "WHERE id=?",
+            (
+                answer, outcome, confidence, latency_seconds, misconception_code,
+                feedback, evaluator_kind, evaluator_version, attempt_id,
             ),
         )
         self._conn.commit()

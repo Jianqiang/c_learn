@@ -23,7 +23,10 @@ import pytest
 
 from learning_os.db import init_db
 from learning_os.repositories import ConceptRepository, ModuleRepository
-from learning_os.services.session_service import SessionService
+from learning_os.services.session_service import (
+    AttemptAlreadySubmittedError,
+    SessionService,
+)
 
 
 @pytest.fixture()
@@ -202,6 +205,51 @@ def test_misconception_code_and_feedback_are_stored(service, item_id):
     )
     assert attempt.misconception_code == "bigger-is-optimal"
     assert attempt.feedback == "conflates capacity with optimality"
+
+
+# ---------------------------------------------------------------------------
+# attempt immutability once submitted (architect review, 2026-08-29):
+# submit_attempt() previously did an unconditional UPDATE, so calling it a
+# second time on the same attempt_id silently rewrote a PASS into a MISS
+# with no trace it had ever been anything else -- breaking the audit trail
+# attempts exists to provide. Default path must now refuse; a separate,
+# explicit override_attempt() is the only way to correct a submitted
+# outcome, and it always marks human_override=True.
+# ---------------------------------------------------------------------------
+
+def test_submitted_attempt_cannot_be_overwritten(service, item_id):
+    session = service.start_or_resume(session_type="drill", target_type="concept", target_id=1)
+    attempt = service.start_attempt(session.id, item_id)
+    service.submit_attempt(attempt.id, answer="4", outcome="PASS")
+
+    with pytest.raises(AttemptAlreadySubmittedError):
+        service.submit_attempt(attempt.id, answer="5", outcome="MISS")
+
+    # and the original outcome must be untouched
+    unchanged = service.get_attempt(attempt.id)
+    assert unchanged.outcome == "PASS"
+    assert unchanged.answer == "4"
+
+
+def test_override_attempt_can_correct_a_submitted_outcome(service, item_id):
+    session = service.start_or_resume(session_type="drill", target_type="concept", target_id=1)
+    attempt = service.start_attempt(session.id, item_id)
+    service.submit_attempt(attempt.id, answer="4", outcome="PASS")
+
+    corrected = service.override_attempt(
+        attempt.id, answer="4", outcome="MISCONCEPTION",
+        feedback="grader missed a sign error",
+    )
+    assert corrected.outcome == "MISCONCEPTION"
+    assert corrected.human_override is True
+    assert corrected.feedback == "grader missed a sign error"
+
+
+def test_override_attempt_on_unsubmitted_attempt_raises(service, item_id):
+    session = service.start_or_resume(session_type="drill", target_type="concept", target_id=1)
+    attempt = service.start_attempt(session.id, item_id)
+    with pytest.raises(ValueError):
+        service.override_attempt(attempt.id, answer="4", outcome="PASS")
 
 
 def test_human_override_defaults_false_and_can_be_set_true(service, item_id):
