@@ -233,3 +233,50 @@ def test_init_db_upgrade_is_idempotent_on_second_call(db_path):
         assert row[0] == 2
     finally:
         conn2.close()
+
+
+def test_init_db_recovers_from_a_crash_mid_migration_002(db_path):
+    """Architect review repro: migration 002 originally ran both ALTER
+    TABLE statements via executescript() and only wrote
+    schema_migrations(version=2) afterwards. If the process died between
+    "first ALTER TABLE succeeded" and "schema_migrations updated" -- e.g.
+    ladder_rung got added but outcome_history and the version bump did
+    not -- the next init_db() would re-run migration 002 from scratch and
+    crash with "duplicate column name: ladder_rung" instead of finishing
+    the upgrade.
+
+    Simulate exactly that half-applied state by hand (ladder_rung present,
+    outcome_history absent, schema_migrations still at 1), then verify
+    init_db() completes the upgrade instead of raising.
+    """
+    _build_v1_database(db_path)
+    _seed_v1_review_state_row(db_path)
+
+    # Hand-apply only the first half of migration 002, without recording
+    # schema_migrations version=2 -- this is the "crashed mid-migration"
+    # state.
+    conn = sqlite3.connect(str(db_path))
+    conn.execute(
+        "ALTER TABLE review_state ADD COLUMN ladder_rung INTEGER NOT NULL DEFAULT 0"
+    )
+    conn.commit()
+    conn.close()
+
+    # Must not raise "duplicate column name: ladder_rung".
+    conn2 = init_db(db_path)
+    try:
+        assert get_schema_version(conn2) == CURRENT_SCHEMA_VERSION
+        columns = {row[1] for row in conn2.execute("PRAGMA table_info(review_state)")}
+        assert "ladder_rung" in columns
+        assert "outcome_history" in columns
+        row = conn2.execute(
+            "SELECT last_outcome, ladder_rung, outcome_history "
+            "FROM review_state WHERE item_id=1"
+        ).fetchone()
+        # Original v1 data (and the half-applied ladder_rung default)
+        # must still be intact after recovery.
+        assert row[0] == "PASS"
+        assert row[1] == 0
+        assert row[2] == "[]"
+    finally:
+        conn2.close()

@@ -228,13 +228,31 @@ def _migration_002_review_state_scheduler_bookkeeping(conn: sqlite3.Connection) 
     outcome_history=()) from the DB row on every call, so PASS always
     scheduled 1 day out instead of advancing 1 -> 3 -> 7 -> 14 -> 30, and the
     leech window never accumulated across separate record_outcome() calls.
+
+    Crash-recovery note (architect review, 2026-08-29): this used to be a
+    single conn.executescript() running both ALTER TABLE statements, with
+    schema_migrations only updated afterwards. If the process died between
+    the first ALTER TABLE succeeding and the second one (or the
+    schema_migrations write), the next init_db() would treat the migration
+    as not-yet-applied and re-run both ALTER TABLE statements from scratch,
+    crashing with "duplicate column name: ladder_rung" on the column that
+    had already been added. Each ALTER TABLE is now run individually and
+    guarded by a PRAGMA table_info() check, so a half-applied migration 002
+    resumes and completes instead of erroring.
     """
-    conn.executescript(
-        """
-        ALTER TABLE review_state ADD COLUMN ladder_rung INTEGER NOT NULL DEFAULT 0;
-        ALTER TABLE review_state ADD COLUMN outcome_history TEXT NOT NULL DEFAULT '[]';
-        """
-    )
+    existing_columns = {
+        row[1] for row in conn.execute("PRAGMA table_info(review_state)")
+    }
+    if "ladder_rung" not in existing_columns:
+        conn.execute(
+            "ALTER TABLE review_state ADD COLUMN ladder_rung "
+            "INTEGER NOT NULL DEFAULT 0"
+        )
+    if "outcome_history" not in existing_columns:
+        conn.execute(
+            "ALTER TABLE review_state ADD COLUMN outcome_history "
+            "TEXT NOT NULL DEFAULT '[]'"
+        )
 
 
 # Ordered list of migrations. Each entry's index+1 is its schema version.
