@@ -47,6 +47,7 @@ def _parse(s: Optional[str]) -> Optional[datetime]:
 class SelectedItem:
     item_id: int
     reason: str
+    budget_exception: bool = False
 
 
 class ReviewService:
@@ -190,14 +191,32 @@ class ReviewService:
             # item must not push elapsed_seconds past max_time_seconds.
             # The one exception is an empty batch -- if even a single due
             # item's own cost exceeds the whole budget, we still surface
-            # that one item (it carries its real reason) rather than
-            # silently returning an empty batch and deadlocking review
-            # forever; no further item is added after it, since the
+            # that one item rather than silently returning an empty batch
+            # and deadlocking review forever. This is a deliberate product
+            # exception to the plan's stated "hard" 20-minute budget, so it
+            # is flagged budget_exception=True with a reason that says so
+            # explicitly -- callers must not present it as an ordinary
+            # review pick. No further item is added after it, since the
             # budget is already exhausted.
             if elapsed_seconds + per_item_seconds > max_time_seconds and selected:
                 break
             _, reason = priority_and_reason(state)
-            selected.append(SelectedItem(item_id=state.item_id, reason=reason))
+            is_oversized_exception = (
+                not selected and per_item_seconds > max_time_seconds
+            )
+            if is_oversized_exception:
+                reason = (
+                    f"{reason} (budget exception: this item's estimated "
+                    f"{per_item_seconds}s alone exceeds the {max_time_seconds}s "
+                    "review time budget)"
+                )
+            selected.append(
+                SelectedItem(
+                    item_id=state.item_id,
+                    reason=reason,
+                    budget_exception=is_oversized_exception,
+                )
+            )
             elapsed_seconds += per_item_seconds
             if elapsed_seconds >= max_time_seconds:
                 break

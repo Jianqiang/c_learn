@@ -238,6 +238,7 @@ def test_select_batch_every_item_has_a_reason(service, make_item):
     service.get_or_create(item_id)
     result = service.select_batch(now=NOW)
     assert all(r.reason for r in result)
+    assert all(r.budget_exception is False for r in result)
 
 
 def test_select_batch_stops_at_max_review_items(service, make_item):
@@ -278,6 +279,13 @@ def test_select_batch_single_oversized_item_is_still_selected_alone(service, mak
     budget, it should still be surfaced alone (with its real reason)
     instead of returning an empty batch and deadlocking review forever.
     No second item may be added after it since the budget is exhausted.
+
+    Architect review (2026-08-29): this bypasses the plan's stated "hard"
+    20-minute budget, so the returned item must be flagged
+    budget_exception=True and its reason must say so explicitly -- a
+    caller (CLI/UI) can then present it as an explicit exception instead
+    of a normal review pick, rather than silently pretending the batch
+    still fits inside 20 minutes.
     """
     item_id, _ = make_item(concept_slug="c1")
     other_id, _ = make_item(concept_slug="c2", concept_name="Concept 2")
@@ -286,6 +294,16 @@ def test_select_batch_single_oversized_item_is_still_selected_alone(service, mak
     oversized_seconds = MAX_REVIEW_TIME_SECONDS + 1
     result = service.select_batch(now=NOW, per_item_seconds=oversized_seconds)
     assert len(result) == 1
+    assert result[0].budget_exception is True
+    assert "exceeds" in result[0].reason.lower()
+
+
+def test_select_batch_normal_items_are_not_flagged_as_budget_exception(service, make_item):
+    item_id, _ = make_item()
+    service.get_or_create(item_id)
+    result = service.select_batch(now=NOW, per_item_seconds=90)
+    assert len(result) == 1
+    assert result[0].budget_exception is False
 
 
 def test_select_batch_excludes_leeched_items(service, make_item):
