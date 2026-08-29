@@ -197,6 +197,31 @@ class SourceRepository:
             raise InvalidTransitionError(
                 f"source cannot transition from {current.status} to {to_status}"
             )
+        if to_status == "QUEUED":
+            # Plan 6.2: QUEUED is "仅适用于 resource_mode=consumable、
+            # pace_mode=self_paced 的 source" -- reference/sensor sources
+            # go to VISIBLE instead, external_paced sources are navigation
+            # only and never enter the fixed-interval scheduler. Section
+            # 5.3 additionally requires an explicit scope_note/
+            # scope_confirmed decision before a source starts consuming
+            # normal drill/review budget, and QUEUED (user approval to
+            # start working through it) is the natural gate for that
+            # decision -- so we check it here rather than only at OPEN.
+            problems = []
+            if current.resource_mode != "consumable":
+                problems.append(
+                    f"resource_mode={current.resource_mode!r} (must be 'consumable')"
+                )
+            if current.pace_mode != "self_paced":
+                problems.append(
+                    f"pace_mode={current.pace_mode!r} (must be 'self_paced')"
+                )
+            if not current.scope_confirmed:
+                problems.append("scope_confirmed=False")
+            if problems:
+                raise InvalidTransitionError(
+                    "source cannot enter QUEUED: " + "; ".join(problems)
+                )
         self._conn.execute(
             "UPDATE sources SET status=?, updated_at=datetime('now') WHERE id=?",
             (to_status, source_id),

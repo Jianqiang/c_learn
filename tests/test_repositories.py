@@ -123,6 +123,7 @@ def test_source_consumable_happy_path(module_repo, source_repo):
     s = source_repo.create(
         module_id=m.id, title="Paper", type="paper",
         resource_mode="consumable", pace_mode="self_paced",
+        scope_confirmed=True,
     )
     source_repo.set_status(s.id, "QUEUED", reason="approved")
     source_repo.set_status(s.id, "OPEN", reason="started reading")
@@ -135,6 +136,7 @@ def test_source_open_can_be_skipped(module_repo, source_repo):
     s = source_repo.create(
         module_id=m.id, title="Paper", type="paper",
         resource_mode="consumable", pace_mode="self_paced",
+        scope_confirmed=True,
     )
     source_repo.set_status(s.id, "QUEUED")
     source_repo.set_status(s.id, "OPEN")
@@ -157,10 +159,72 @@ def test_source_queued_cannot_skip_directly(module_repo, source_repo):
     s = source_repo.create(
         module_id=m.id, title="Paper", type="paper",
         resource_mode="consumable", pace_mode="self_paced",
+        scope_confirmed=True,
     )
     source_repo.set_status(s.id, "QUEUED")
     with pytest.raises(InvalidTransitionError):
         source_repo.set_status(s.id, "SKIPPED")
+
+
+# ---------------------------------------------------------------------------
+# QUEUED gate: resource_mode/pace_mode/scope_confirmed (plan 6.2 / 5.3)
+# ---------------------------------------------------------------------------
+
+def test_reference_source_cannot_enter_queued(module_repo, source_repo):
+    m = module_repo.create(slug="m1", name="M1", phase=1)
+    s = source_repo.create(
+        module_id=m.id, title="Reference doc", type="doc",
+        resource_mode="reference", pace_mode="self_paced",
+        scope_confirmed=True,
+    )
+    with pytest.raises(InvalidTransitionError):
+        source_repo.set_status(s.id, "QUEUED")
+    # rejected transition must not mutate state
+    assert source_repo.get(s.id).status == "PROPOSED"
+
+
+def test_sensor_source_cannot_enter_queued(module_repo, source_repo):
+    m = module_repo.create(slug="m1", name="M1", phase=1)
+    s = source_repo.create(
+        module_id=m.id, title="Frontier feed", type="feed",
+        resource_mode="sensor", pace_mode="self_paced",
+        scope_confirmed=True,
+    )
+    with pytest.raises(InvalidTransitionError):
+        source_repo.set_status(s.id, "QUEUED")
+
+
+def test_external_paced_source_cannot_enter_queued(module_repo, source_repo):
+    m = module_repo.create(slug="m1", name="M1", phase=1)
+    s = source_repo.create(
+        module_id=m.id, title="Kid's algorithm course", type="course",
+        resource_mode="consumable", pace_mode="external_paced",
+        scope_confirmed=True,
+    )
+    with pytest.raises(InvalidTransitionError):
+        source_repo.set_status(s.id, "QUEUED")
+
+
+def test_unconfirmed_scope_cannot_enter_queued(module_repo, source_repo):
+    m = module_repo.create(slug="m1", name="M1", phase=1)
+    s = source_repo.create(
+        module_id=m.id, title="Long textbook", type="book",
+        resource_mode="consumable", pace_mode="self_paced",
+        scope_confirmed=False,
+    )
+    with pytest.raises(InvalidTransitionError):
+        source_repo.set_status(s.id, "QUEUED")
+
+
+def test_consumable_self_paced_confirmed_scope_can_enter_queued(module_repo, source_repo):
+    m = module_repo.create(slug="m1", name="M1", phase=1)
+    s = source_repo.create(
+        module_id=m.id, title="Paper", type="paper",
+        resource_mode="consumable", pace_mode="self_paced",
+        scope_confirmed=True,
+    )
+    source_repo.set_status(s.id, "QUEUED", reason="approved")
+    assert source_repo.get(s.id).status == "QUEUED"
 
 
 def test_source_any_status_can_archive(module_repo, source_repo):
