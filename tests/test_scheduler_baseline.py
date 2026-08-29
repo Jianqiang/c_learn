@@ -93,7 +93,9 @@ def test_partial_schedules_immediate_repair_at_one_day():
     state = scheduler.next_due(state, outcome="PASS", now=NOW)  # get to 1d rung
     state = scheduler.next_due(state, outcome="PARTIAL", now=NOW)
     assert state.due_at == NOW + timedelta(days=1)
-    assert state.failure_streak == 1
+    # PARTIAL is not a "true failure" for the MISS/MISCONCEPTION streak;
+    # it resets failure_streak to 0 rather than extending it.
+    assert state.failure_streak == 0
     assert state.lapse_count == 1
 
 
@@ -145,14 +147,46 @@ def test_skipped_does_not_change_due_at_or_streaks():
 # ---------------------------------------------------------------------------
 
 def test_three_consecutive_failures_triggers_leech_intervention():
+    """Plan 10.4: the streak is defined over {MISS, MISCONCEPTION} only."""
     scheduler = BaselineScheduler()
     state = fresh_state()
     for outcome in ("MISS", "MISCONCEPTION"):
         state = scheduler.next_due(state, outcome=outcome, now=NOW)
         assert state.intervention_required is False
-    state = scheduler.next_due(state, outcome="PARTIAL", now=NOW)
+    state = scheduler.next_due(state, outcome="MISS", now=NOW)
     assert state.intervention_required is True
     assert state.active is False
+
+
+def test_partial_does_not_extend_failure_streak():
+    """PARTIAL triggers a repair like a failure, but is not a "true
+    failure" for the 3-consecutive-MISS/MISCONCEPTION streak: it resets
+    the streak back to 0 instead of extending it, so MISS, PARTIAL, MISS
+    must NOT read as 3 consecutive failures.
+    """
+    scheduler = BaselineScheduler()
+    state = fresh_state()
+    state = scheduler.next_due(state, outcome="MISS", now=NOW)
+    assert state.failure_streak == 1
+    state = scheduler.next_due(state, outcome="PARTIAL", now=NOW)
+    assert state.failure_streak == 0
+    assert state.intervention_required is False
+    state = scheduler.next_due(state, outcome="MISS", now=NOW)
+    assert state.failure_streak == 1
+    assert state.intervention_required is False
+
+
+def test_three_consecutive_partial_does_not_trigger_leech_via_streak():
+    """3 consecutive PARTIAL alone (only 3 entries in the rolling window,
+    below the 4-of-5 threshold) must not trip either leech condition.
+    """
+    scheduler = BaselineScheduler()
+    state = fresh_state()
+    for _ in range(3):
+        state = scheduler.next_due(state, outcome="PARTIAL", now=NOW)
+        assert state.failure_streak == 0
+        assert state.intervention_required is False
+    assert state.active is True
 
 
 def test_pass_breaks_consecutive_failure_streak_and_avoids_leech():

@@ -9,13 +9,20 @@ resets to the bottom (rung 0) so the next PASS goes to 1d again, not to
 wherever the ladder previously was.
 
 On MISCONCEPTION: same as PARTIAL/MISS (repair + restart from 1d) but is
-tracked as a "true failure" outcome for leech purposes (both are).
+tracked as a "true failure" outcome for leech purposes.
 
 Leech condition (any one triggers intervention_required + active=False,
 pausing auto-due):
-    - 3 consecutive outcomes in {MISS, MISCONCEPTION}
+    - 3 consecutive outcomes in {MISS, MISCONCEPTION} ("failure_streak").
+      PARTIAL is a repair-triggering outcome but is NOT a "true failure"
+      for this streak: it breaks/resets failure_streak back to 0 rather
+      than extending it, so e.g. MISS, PARTIAL, MISS never trips the
+      3-in-a-row rule on its own. This matches plan section 10.4, which
+      defines the streak explicitly over {MISS, MISCONCEPTION}.
     - OR 4-of-the-last-5 outcomes are non-PASS (SKIPPED does not count
-      as an outcome for this window; see below)
+      as an outcome for this window; see below). PARTIAL still counts as
+      non-PASS in this rolling window even though it doesn't extend
+      failure_streak.
 
 Once a ReviewState is leeched (active=False), next_due() refuses to
 schedule further outcomes -- the plan requires an explicit human choice
@@ -92,7 +99,16 @@ class BaselineScheduler:
             new_ladder_rung = next_rung
         else:  # PARTIAL, MISS, MISCONCEPTION: immediate repair, reset ladder
             due_at = now + timedelta(days=LADDER_DAYS[0])
-            new_failure_streak = state.failure_streak + 1
+            # failure_streak is the plan 10.4 "3 consecutive MISS/
+            # MISCONCEPTION" counter. PARTIAL triggers a repair like a
+            # failure, but is not itself a "true failure" for streak
+            # purposes, so it breaks the streak back to 0 instead of
+            # extending it (a MISS, PARTIAL, MISS sequence should not
+            # read as "3 consecutive failures").
+            if outcome in FAILURE_OUTCOMES:
+                new_failure_streak = state.failure_streak + 1
+            else:
+                new_failure_streak = 0
             new_lapse_count = state.lapse_count + 1
             new_ladder_rung = 0
 
