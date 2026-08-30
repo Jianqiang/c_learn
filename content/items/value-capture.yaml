@@ -1,0 +1,25 @@
+items:
+  - type: explanation
+    prompt: >
+      解释：为什么一个创造了大量社会/客户价值的创新者，未必能捕获
+      （capture）相应比例的经济利润？请结合 value creation 与 value
+      capture 的区别展开，并说明议价能力/可复制性在其中的作用。
+    grading_mode: rubric
+    rubric_json: >
+      {"must_understand": ["distinguishes_value_creation_from_value_capture",
+      "explains_capture_depends_on_bargaining_power_or_replicability_not_creation_amount"],
+      "disqualifiers": ["assumes_innovator_automatically_captures_value_proportional_to_creation"]}
+    difficulty: medium
+
+  - type: explanation
+    prompt: >
+      给出一个（真实或合理假设的）AI 产品案例，说明这条产业链上的
+      value capture 更多流向了模型提供商、应用层、还是基础设施层
+      （如算力/云），并解释背后的机制（例如是否存在 bottleneck、
+      切换成本、或技术本身容易被复制）。
+    grading_mode: rubric
+    rubric_json: >
+      {"must_understand": ["names_a_specific_layer_capturing_more_value",
+      "gives_a_concrete_mechanism_bottleneck_switching_cost_or_replicability"],
+      "disqualifiers": ["claims_value_capture_is_evenly_split_with_no_mechanism"]}
+    difficulty: hard

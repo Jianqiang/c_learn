@@ -1,0 +1,30 @@
+# Seed application references (plan 5.3: "2 个真实 research/case
+# application reference"). These give the vertical slice at least one
+# STRONG evidence_level application per domain so the M0 acceptance test
+# (drill -> recall -> review -> apply -> retire, plan section 14) has a
+# real, non-synthetic `learn apply` example to run end-to-end, and so
+# ApplicationService's evidence gates (plan 6.4) have real data to check
+# against instead of only test fixtures.
+applications:
+  - concept_slug: kv-cache
+    evidence_level: STRONG
+    reference_type: research_note
+    reference: >
+      co_investor 全球 capex 筛选中，用 KV cache 公式估算了长鑫存储
+      (CXMT) 下游客户长上下文推理场景的显存瓶颈，用于判断存储扩产
+      需求弹性（2026-08 vertical-slice seed note）。
+    note: >
+      真实应用：把 kv-cache 公式套用到具体客户的 batch/seq_len 假设，
+      用于支持存储 capex 需求判断，而非纯练习题。
+
+  - concept_slug: value-capture
+    evidence_level: STRONG
+    reference_type: research_note
+    reference: >
+      在评估 CXMT IPO 主题候选标的时，用 value creation vs value capture
+      框架判断设备/材料环节相对于晶圆厂本身谁更可能捕获扩产周期的
+      经济利润，用于筛选候选标的的护城河来源（2026-08 vertical-slice
+      seed note）。
+    note: >
+      真实应用：不是练习题，而是投研筛选过程中实际使用该框架做出的
+      判断依据之一。

@@ -1,0 +1,21 @@
+items:
+  - type: numeric
+    prompt: >
+      batch=1, seq_len=8192, num_layers=80, num_heads=64, head_dim=128，
+      dtype=bf16（2 bytes/元素）。用公式 2 * layers * heads * head_dim *
+      seq_len * batch * dtype_bytes 估算 KV cache 大小，换算成十进制 GB
+      （1e9 bytes），保留两位小数。
+    grading_mode: deterministic
+    reference_answer: "21.47"
+    answer_schema_json: '{"unit": "GB (decimal, 1e9 bytes)", "rel_tol": 0.01, "formula": "kv_cache_bytes(num_layers=80, num_heads=64, head_dim=128, seq_len=8192, batch=1, dtype_bytes=2) / 1e9"}'
+    difficulty: medium
+    calibration_eligible: true
+
+  - type: numeric
+    prompt: >
+      在上一题的配置基础上，如果 batch 从 1 提升到 4，其余参数不变，
+      KV cache 大小变为原来的多少倍？（只需给出倍数，例如 2）
+    grading_mode: deterministic
+    reference_answer: "4"
+    answer_schema_json: '{"unit": "multiplier (dimensionless)", "rel_tol": 0.0}'
+    difficulty: easy

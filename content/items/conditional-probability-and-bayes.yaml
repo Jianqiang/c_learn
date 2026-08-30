@@ -1,0 +1,23 @@
+items:
+  - type: numeric
+    prompt: >
+      某疾病人群患病率（prior）1%。检测灵敏度（真阳性率）99%，特异度
+      （真阴性率）95%（即健康人误报阳性率 5%）。某人检测为阳性，用
+      Bayes 定理计算他真正患病的后验概率，保留四位小数（例如 0.1667）。
+    grading_mode: deterministic
+    reference_answer: "0.1667"
+    answer_schema_json: '{"unit": "probability", "rel_tol": 0.02, "formula": "0.99*0.01 / (0.99*0.01 + 0.05*0.99)"}'
+    difficulty: medium
+    calibration_eligible: true
+
+  - type: discrimination
+    prompt: >
+      以下哪个选项正确描述了 base rate fallacy？
+      A) 忽略先验概率（患病率），只看检测的灵敏度/特异度，从而高估检测
+      阳性后的真实患病概率。
+      B) 忽略灵敏度/特异度，只看先验概率来下判断。
+      请只回答 A 或 B。
+    grading_mode: deterministic
+    reference_answer: "A"
+    answer_schema_json: '{"disqualifiers": ["B"]}'
+    difficulty: easy

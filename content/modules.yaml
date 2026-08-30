@@ -1,0 +1,34 @@
+# First vertical-slice modules (plan section 5.3 / 14 M0).
+#
+# These are hand-authored, not parsed from the source Markdown syllabi --
+# full Markdown import (plan section 8: ImportReport, dedup, content-hash
+# idempotency) is explicit M1 scope (plan section 14), a later milestone.
+# This file only needs to cover the three modules that host the vertical
+# slice's seven concepts.
+modules:
+  - slug: llm-systems
+    name: "B. LLM 技术与 Production Function（确定性子集：参数量/KV cache/FLOPs）"
+    phase: 1
+    importance: core
+    notes: >
+      对应 投资技术学习清单.md 的模块 B + A5「毕业作业」中列出的
+      parameter memory / KV cache / training & inference FLOPs 数量级计算。
+      第一批 concept 全部走 Level-1 确定性判分（plan 9.1），不需要 LLM。
+
+  - slug: math-stat-refresh
+    name: "A2/A3. 概率与统计 inference 子集（Bayes / p-value / selection bias）"
+    phase: 1
+    importance: core
+    notes: >
+      对应 投资技术学习清单.md 模块 A2（Harvard Stat 110 — Bayes）与 A3
+      （StatQuest / p-value / 统计证据边界）。用于建立"能判断统计证据边界"
+      的确定性辨析能力，是模块 E（投资/决策）的前置。
+
+  - slug: econ-strategy
+    name: "D/F. AI 技术经济学与 Strategy（value capture / complementary assets）"
+    phase: 2
+    importance: high-roi
+    notes: >
+      对应 投资技术学习清单.md 模块 F1（Teece 1986）与模块 D 提到的
+      value creation/value capture 框架。这两个 concept 走 source-grounded
+      rubric + 人工 adjudication（plan 9.2），不伪装成确定性测验。

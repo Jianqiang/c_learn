@@ -1,0 +1,21 @@
+items:
+  - type: numeric
+    prompt: >
+      一个 70B 参数的模型用 bfloat16（2 bytes/param）存储权重。只计算参数
+      本身占用的显存（不含 optimizer state / activation），单位用十进制
+      GB（1 GB = 1e9 bytes）。答案是多少 GB？
+    grading_mode: deterministic
+    reference_answer: "140"
+    answer_schema_json: '{"unit": "GB (decimal, 1e9 bytes)", "rel_tol": 0.0, "formula": "parameter_memory_bytes(num_params=70e9, bytes_per_param=2) / 1e9"}'
+    difficulty: easy
+    calibration_eligible: true
+
+  - type: numeric
+    prompt: >
+      同一个 70B 参数模型换成 FP8（1 byte/param）存储，参数占用的显存
+      降为多少 GB（十进制 1e9 bytes）？
+    grading_mode: deterministic
+    reference_answer: "70"
+    answer_schema_json: '{"unit": "GB (decimal, 1e9 bytes)", "rel_tol": 0.0, "formula": "parameter_memory_bytes(num_params=70e9, bytes_per_param=1) / 1e9"}'
+    difficulty: easy
+    calibration_eligible: true

@@ -1,0 +1,14 @@
+concept:
+  slug: parameter-memory
+  module_slug: llm-systems
+  name: "Parameter memory footprint"
+  importance: core
+  description: >
+    给定参数量和每参数字节数（fp32/bf16/fp8 等 dtype），计算模型权重本身
+    占用的显存/存储大小。不包含 optimizer state、gradient、activation 或
+    KV cache（那是 kv-cache concept 的范围）。
+  research_relevance: >
+    判断一个模型在给定硬件上能否直接加载、是否需要量化/sharding，是评估
+    开源模型部署可行性和推理成本结构的第一步。
+sources:
+  - a5-math-refresh-graduation-assignment

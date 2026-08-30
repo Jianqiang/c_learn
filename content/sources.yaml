@@ -1,0 +1,60 @@
+# Seed sources for the first vertical slice (plan 5.3 / 14 M0). Each source
+# links back to a real heading in one of the two source syllabus files via
+# source_file/source_line (plan 7.1: "所有导入记录带 source_file、
+# source_line、content_hash，可追溯回原文"), even though this file is
+# hand-authored rather than parsed by an importer (that's M1's job).
+sources:
+  - slug: cs336-l2-resource-accounting
+    module_slug: llm-systems
+    title: "Stanford CS336 2026 — L2 resource accounting (FLOPs/memory/arithmetic intensity)"
+    type: course
+    resource_mode: consumable
+    pace_mode: self_paced
+    scope_note: "只看 L2 resource accounting 一讲，不刷完整门课"
+    scope_confirmed: true
+    source_file: "投资技术学习清单.md"
+    source_line: 250
+
+  - slug: a5-math-refresh-graduation-assignment
+    module_slug: llm-systems
+    title: "A5. 数学 refresh 的真正毕业作业（parameter memory / KV cache / FLOPs 数量级计算）"
+    type: exercise
+    resource_mode: consumable
+    pace_mode: self_paced
+    scope_note: "只做 parameter memory / KV cache / training FLOPs / inference FLOPs 四类计算"
+    scope_confirmed: true
+    source_file: "投资技术学习清单.md"
+    source_line: 199
+
+  - slug: stat110-bayes
+    module_slug: math-stat-refresh
+    title: "Harvard Stat 110 — Joe Blitzstein（Bayes / conditional probability）"
+    type: course
+    resource_mode: consumable
+    pace_mode: self_paced
+    scope_note: "只看 Bayes / conditional expectation 相关章节"
+    scope_confirmed: true
+    source_file: "投资技术学习清单.md"
+    source_line: 96
+
+  - slug: statquest-p-value
+    module_slug: math-stat-refresh
+    title: "StatQuest 精选 — p-value 的正确含义 / 统计证据边界"
+    type: video
+    resource_mode: consumable
+    pace_mode: self_paced
+    scope_note: "只看 p-value 含义与常见误用（selection bias / multiple comparisons）"
+    scope_confirmed: true
+    source_file: "投资技术学习清单.md"
+    source_line: 143
+
+  - slug: teece-1986
+    module_slug: econ-strategy
+    title: "Teece 1986 — Profiting from Technological Innovation"
+    type: paper
+    resource_mode: consumable
+    pace_mode: self_paced
+    scope_note: "重点：complementary assets 与 value capture 的关系"
+    scope_confirmed: true
+    source_file: "投资技术学习清单.md"
+    source_line: 785

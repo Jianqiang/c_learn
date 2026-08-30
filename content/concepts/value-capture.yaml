@@ -1,0 +1,16 @@
+concept:
+  slug: value-capture
+  module_slug: econ-strategy
+  name: "Value creation vs. value capture"
+  importance: high-roi
+  description: >
+    区分"创造了多少社会/客户价值"（value creation）与"实际获取了多少
+    经济利润"（value capture）；后者取决于议价能力、可复制性、
+    complementary assets/bottleneck 控制，而不是价值创造量本身。
+  research_relevance: >
+    判断 AI 产业链上利润最终流向模型层/应用层/基础设施层的哪一环，是
+    模块 D（AI 技术经济学，"最高 ROI"）里最核心的分析框架，直接服务于
+    "催化剂临近度是 Alpha 关键"的选股逻辑——先判断谁能捕获价值，再找
+    临近催化剂。
+sources:
+  - teece-1986

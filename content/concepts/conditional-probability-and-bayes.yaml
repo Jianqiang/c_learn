@@ -1,0 +1,13 @@
+concept:
+  slug: conditional-probability-and-bayes
+  module_slug: math-stat-refresh
+  name: "Conditional probability & Bayes' rule"
+  importance: core
+  description: >
+    用 Bayes 定理从先验（prior）、似然（likelihood）计算后验概率，并能
+    识别 base rate fallacy（忽略先验只看检测灵敏度/特异度）。
+  research_relevance: >
+    几乎所有"新证据应该多大程度更新我的判断"的投资/研究场景本质上都是
+    Bayes 更新；这是模块 E（投资/决策）的数学前置。
+sources:
+  - stat110-bayes

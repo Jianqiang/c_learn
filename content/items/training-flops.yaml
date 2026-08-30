@@ -1,0 +1,22 @@
+items:
+  - type: numeric
+    prompt: >
+      用 C ≈ 6*N*D 估算：7B 参数模型在 1.4T tokens 上训练，需要多少
+      FLOPs？用科学计数法给出两位有效数字（例如 5.9e22）。
+    grading_mode: deterministic
+    reference_answer: "5.88e22"
+    answer_schema_json: '{"unit": "FLOPs", "rel_tol": 0.02, "formula": "training_flops(num_params=7e9, num_tokens=1.4e12)"}'
+    difficulty: medium
+    calibration_eligible: true
+
+  - type: numeric
+    prompt: >
+      DeepSeek-V3 report 中 671B total / 37B activated parameters（MoE），
+      训练 tokens 约 14.8T。只用 activated 参数套用 C ≈ 6*N_active*D，
+      估算训练 FLOPs（科学计数法，两位有效数字，例如 3.3e24）。这是一个
+      简化近似，不代表 MoE 训练 FLOPs 的精确核算方式。
+    grading_mode: deterministic
+    reference_answer: "3.29e24"
+    answer_schema_json: '{"unit": "FLOPs", "rel_tol": 0.03, "formula": "training_flops(num_params=37e9, num_tokens=14.8e12)"}'
+    difficulty: hard
+    calibration_eligible: true

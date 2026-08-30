@@ -1,0 +1,15 @@
+concept:
+  slug: statistical-significance-and-p-values
+  module_slug: math-stat-refresh
+  name: "Statistical significance, p-values & multiple comparisons"
+  importance: core
+  description: >
+    正确解读 p-value 的含义（"若零假设为真，观察到当前或更极端结果的
+    概率"，而不是"零假设为假的概率"），并能识别 selection bias / multiple
+    comparisons 导致的虚假显著性。
+  research_relevance: >
+    判断一份研究报告/量化回测结果的统计证据边界，是避免被"看似显著"的
+    虚假模式误导的核心防线，直接对应用户投资框架里"结论须标明证据等级"
+    的要求。
+sources:
+  - statquest-p-value

@@ -1,0 +1,24 @@
+items:
+  - type: explanation
+    prompt: >
+      根据 Teece (1986)，什么是 complementary assets？为什么在模仿门槛低
+      （weak appropriability regime）的行业里，拥有 complementary assets
+      比拥有核心技术创新本身更重要？
+    grading_mode: rubric
+    rubric_json: >
+      {"must_understand": ["defines_complementary_assets_generic_specialized_or_cospecialized",
+      "links_weak_appropriability_to_imitation_ease_shifting_profit_to_asset_owner"],
+      "disqualifiers": ["treats_patent_or_IP_alone_as_sufficient_for_appropriating_profit"]}
+    difficulty: medium
+
+  - type: explanation
+    prompt: >
+      举一个历史或当代例子（例如个人电脑硬件 vs 操作系统层，或云计算
+      基础设施 vs 应用层模型），说明谁通过控制 complementary assets 而
+      捕获了大部分利润，谁贡献了核心创新却未能捕获相应利润。
+    grading_mode: rubric
+    rubric_json: >
+      {"must_understand": ["gives_a_concrete_historical_or_current_example",
+      "correctly_identifies_which_side_controls_the_complementary_asset_and_captures_profit"],
+      "disqualifiers": ["claims_the_original_innovator_always_captures_most_profit"]}
+    difficulty: hard

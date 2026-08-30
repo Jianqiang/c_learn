@@ -1,0 +1,15 @@
+concept:
+  slug: complementary-assets
+  module_slug: econ-strategy
+  name: "Complementary assets & appropriability (Teece 1986)"
+  importance: high-roi
+  description: >
+    Teece (1986) 的核心论点：在模仿门槛低（weak appropriability regime）
+    的行业里，利润更多流向控制 complementary assets（生产、分销、售后、
+    品牌等互补资产）的一方，而不是核心技术创新者本身。
+  research_relevance: >
+    这是判断"技术领先者能否兑现为股价上涨"的关键中间变量——很多时候
+    正确的判断不是"谁技术最强"，而是"谁控制了让技术变现的互补资产"，
+    直接对应用户"催化剂临近度"框架中对护城河来源的甄别。
+sources:
+  - teece-1986

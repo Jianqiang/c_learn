@@ -1,0 +1,26 @@
+items:
+  - type: discrimination
+    prompt: >
+      在一次预先注册的单一假设检验中，得到 p=0.03。以下哪个解读是正确的？
+      A) 零假设为假的概率是 97%。
+      B) 如果零假设为真，观察到当前或比当前更极端的结果的概率是 3%。
+      请只回答 A 或 B。
+    grading_mode: deterministic
+    reference_answer: "B"
+    answer_schema_json: '{"disqualifiers": ["A"]}'
+    difficulty: medium
+    calibration_eligible: true
+
+  - type: discrimination
+    prompt: >
+      一项研究独立检验了 20 个假设，只报告其中 1 个 p<0.05 的结果作为
+      "发现"，且未做多重比较校正（如 Bonferroni）。这主要体现了什么
+      问题？
+      A) selection bias / multiple comparisons：在 20 次检验中，仅凭随机
+      性就预期约 1 次假阳性，第一类错误率被严重低估。
+      B) 样本量不足导致统计功效（power）过低。
+      请只回答 A 或 B。
+    grading_mode: deterministic
+    reference_answer: "A"
+    answer_schema_json: '{"disqualifiers": ["B"]}'
+    difficulty: medium

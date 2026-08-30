@@ -1,0 +1,15 @@
+concept:
+  slug: kv-cache
+  module_slug: llm-systems
+  name: "KV cache size & scaling"
+  importance: core
+  description: >
+    用公式 2 * num_layers * num_heads * head_dim * seq_len * batch *
+    dtype_bytes 估算 attention 的 KV cache 显存占用，并判断它如何随
+    batch/seq_len 缩放。
+  research_relevance: >
+    KV cache 是长上下文/大 batch 推理的主要显存瓶颈之一，直接决定推理
+    成本结构（inference-time compute economics，对应模块 D 的经济学分析）。
+sources:
+  - cs336-l2-resource-accounting
+  - a5-math-refresh-graduation-assignment

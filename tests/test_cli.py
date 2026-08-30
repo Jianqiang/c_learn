@@ -490,3 +490,69 @@ def test_export_writes_json_files_for_every_table(db_path, tmp_path):
     assert (out_dir / "modules.json").exists()
     assert (out_dir / "concepts.json").exists()
     assert (out_dir / "learning_outputs.json").exists()
+
+
+# ---------------------------------------------------------------------------
+# learn seed (loads content/ YAML into the DB, plan 5.3 vertical slice)
+# ---------------------------------------------------------------------------
+
+def test_seed_loads_content_directory_into_db(db_path, tmp_path):
+    import textwrap
+
+    content_dir = tmp_path / "seed-content"
+    content_dir.mkdir()
+    (content_dir / "concepts").mkdir()
+    (content_dir / "items").mkdir()
+    (content_dir / "modules.yaml").write_text(
+        "modules:\n  - slug: m1\n    name: M1\n    phase: 1\n"
+    )
+    (content_dir / "sources.yaml").write_text("sources: []\n")
+    (content_dir / "concepts" / "c1.yaml").write_text(
+        textwrap.dedent(
+            """
+            concept:
+              slug: c1
+              module_slug: m1
+              name: C1
+            sources: []
+            """
+        )
+    )
+    (content_dir / "items" / "c1.yaml").write_text(
+        textwrap.dedent(
+            """
+            items:
+              - type: numeric
+                prompt: "1+1?"
+                grading_mode: deterministic
+                reference_answer: "2"
+            """
+        )
+    )
+
+    result = _run(db_path, "seed", "--content-dir", str(content_dir))
+    assert result.exit_code == 0, result.output
+    assert "modules=1" in result.output
+    assert "concepts=1" in result.output
+    assert "items=1" in result.output
+
+    conn = init_db(db_path)
+    concept = ConceptRepository(conn).get_by_slug("c1")
+    assert concept.name == "C1"
+    conn.close()
+
+
+def test_seed_is_idempotent_via_cli(db_path, tmp_path):
+    content_dir = tmp_path / "seed-content"
+    content_dir.mkdir()
+    (content_dir / "concepts").mkdir()
+    (content_dir / "items").mkdir()
+    (content_dir / "modules.yaml").write_text(
+        "modules:\n  - slug: m1\n    name: M1\n    phase: 1\n"
+    )
+    (content_dir / "sources.yaml").write_text("sources: []\n")
+
+    _run(db_path, "seed", "--content-dir", str(content_dir))
+    second = _run(db_path, "seed", "--content-dir", str(content_dir))
+    assert second.exit_code == 0, second.output
+    assert "modules=0" in second.output

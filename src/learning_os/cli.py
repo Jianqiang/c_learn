@@ -48,6 +48,7 @@ from learning_os.repositories import (
 from learning_os.services import backup_service
 from learning_os.services.application_service import ApplicationService, EvidenceGateError
 from learning_os.services.review_service import ReviewService
+from learning_os.services.seed_loader import seed_database
 from learning_os.services.session_service import SessionService
 
 app = typer.Typer(add_completion=False, no_args_is_help=True)
@@ -111,6 +112,40 @@ def init(ctx: typer.Context):
     conn = init_db(path)
     conn.close()
     typer.echo(f"Database ready at {path}")
+
+
+# ---------------------------------------------------------------------------
+# learn seed --content-dir <path>
+# ---------------------------------------------------------------------------
+
+@app.command()
+def seed(
+    ctx: typer.Context,
+    content_dir: str = typer.Option(
+        "content", "--content-dir",
+        help="Directory with modules.yaml/sources.yaml/concepts/*.yaml/items/*.yaml "
+        "(plan 5.3 vertical-slice seed content, 13.2 suggested layout).",
+    ),
+):
+    """Load hand-authored YAML seed content (plan 5.3) into the database.
+
+    Idempotent by slug for modules/sources/concepts and by (concept, prompt)
+    for items -- safe to re-run after `learn init` without duplicating rows.
+    This is distinct from the not-yet-implemented `learn import-syllabus`
+    (plan section 8's Markdown importer with ImportReport/dedup/content-hash,
+    explicit M1 scope): `seed` only replays already-reviewed YAML, it does
+    not parse or interpret the original syllabus Markdown files at all.
+    """
+    conn = _connect(ctx)
+    try:
+        result = seed_database(conn, content_dir)
+        typer.echo(
+            f"Seeded from {content_dir}: modules={result.modules_created} "
+            f"sources={result.sources_created} concepts={result.concepts_created} "
+            f"items={result.items_created} applications={result.applications_created}"
+        )
+    finally:
+        conn.close()
 
 
 # ---------------------------------------------------------------------------
