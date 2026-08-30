@@ -563,3 +563,95 @@ class LearningOutputRepository:
         )
         self._conn.commit()
         return self.get(output_id)
+
+
+# ---------------------------------------------------------------------------
+# Items (plan 7.2 #items)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class Item:
+    id: int
+    concept_id: int
+    type: str
+    prompt: str
+    grading_mode: str
+    reference_answer: Optional[str]
+    rubric_json: Optional[str]
+    answer_schema_json: Optional[str]
+    difficulty: Optional[str]
+    calibration_eligible: bool
+    content_version: int
+    active: bool
+
+
+_ITEM_COLUMNS = (
+    "id, concept_id, type, prompt, grading_mode, reference_answer, "
+    "rubric_json, answer_schema_json, difficulty, calibration_eligible, "
+    "content_version, active"
+)
+
+
+def _row_to_item(row) -> Item:
+    return Item(
+        id=row[0], concept_id=row[1], type=row[2], prompt=row[3],
+        grading_mode=row[4], reference_answer=row[5], rubric_json=row[6],
+        answer_schema_json=row[7], difficulty=row[8],
+        calibration_eligible=bool(row[9]), content_version=row[10],
+        active=bool(row[11]),
+    )
+
+
+class ItemRepository:
+    """No prior repository owned the items table -- callers each wrote
+    their own narrow ad-hoc SQL (services/application_service.py,
+    services/review_service.py, and several test fixtures). This gives CLI
+    wiring (`learn drill`/`learn learn`/`learn recall`, plan 12.1) one real
+    repository to enumerate a concept's active items and fetch full item
+    content instead of adding yet another one-off query."""
+
+    def __init__(self, conn: sqlite3.Connection):
+        self._conn = conn
+
+    def create(
+        self,
+        *,
+        concept_id: int,
+        type: str,
+        prompt: str,
+        grading_mode: str,
+        reference_answer: Optional[str] = None,
+        rubric_json: Optional[str] = None,
+        answer_schema_json: Optional[str] = None,
+        difficulty: Optional[str] = None,
+        calibration_eligible: bool = False,
+    ) -> Item:
+        cur = self._conn.execute(
+            "INSERT INTO items "
+            "(concept_id, type, prompt, grading_mode, reference_answer, "
+            "rubric_json, answer_schema_json, difficulty, calibration_eligible) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                concept_id, type, prompt, grading_mode, reference_answer,
+                rubric_json, answer_schema_json, difficulty,
+                int(calibration_eligible),
+            ),
+        )
+        self._conn.commit()
+        return self.get(cur.lastrowid)
+
+    def get(self, item_id: int) -> Item:
+        row = self._conn.execute(
+            f"SELECT {_ITEM_COLUMNS} FROM items WHERE id=?", (item_id,)
+        ).fetchone()
+        if row is None:
+            raise KeyError(f"item {item_id} not found")
+        return _row_to_item(row)
+
+    def list_by_concept(self, concept_id: int) -> list[Item]:
+        rows = self._conn.execute(
+            f"SELECT {_ITEM_COLUMNS} FROM items "
+            "WHERE concept_id=? AND active=1 ORDER BY id ASC",
+            (concept_id,),
+        ).fetchall()
+        return [_row_to_item(row) for row in rows]
