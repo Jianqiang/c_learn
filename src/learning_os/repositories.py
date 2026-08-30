@@ -181,6 +181,28 @@ class SourceRepository:
         ).fetchone()
         if row is None:
             raise KeyError(f"source {source_id} not found")
+        return self._row_to_source(row)
+
+    def get_by_slug(self, slug: str) -> Source:
+        # Added for CLI wiring (`learn learn <source-slug>`, plan 12.1):
+        # ModuleRepository/ConceptRepository already resolve their CLI-facing
+        # targets by slug; sources need the same lookup rather than forcing
+        # every caller to know the numeric id. Sources are the only content
+        # type with a nullable slug column (plan 7.2: not every source is
+        # meant to be addressed directly), so an existing row with slug=NULL
+        # is treated the same as "not found" -- SQL `slug=?` never matches
+        # NULL, which is exactly the semantics we want here.
+        row = self._conn.execute(
+            "SELECT id, module_id, slug, title, type, status, resource_mode, "
+            "pace_mode, scope_note, scope_confirmed FROM sources WHERE slug=?",
+            (slug,),
+        ).fetchone()
+        if row is None:
+            raise KeyError(f"source '{slug}' not found")
+        return self._row_to_source(row)
+
+    @staticmethod
+    def _row_to_source(row) -> Source:
         return Source(
             id=row[0], module_id=row[1], slug=row[2], title=row[3], type=row[4],
             status=row[5], resource_mode=row[6], pace_mode=row[7],
@@ -378,3 +400,166 @@ class FocusRepository:
         )
         self._conn.commit()
         return self.get_current()
+
+
+# ---------------------------------------------------------------------------
+# Learning outputs (plan 7.2 #learning_outputs, 12.1 `learn output ...`)
+# ---------------------------------------------------------------------------
+
+LEARNING_OUTPUT_TRANSITIONS = {
+    # PROPOSED can go straight to SUBMITTED (a user who just does the work
+    # and submits a reference, without an explicit "I started this" step,
+    # is the common case -- forcing PROPOSED -> ACTIVE -> SUBMITTED for
+    # every output would be busywork the plan never asked for) as well as
+    # to ACTIVE (the "I'm working on this now" declaration) or ARCHIVED.
+    "PROPOSED": {"ACTIVE", "SUBMITTED", "ARCHIVED"},
+    "ACTIVE": {"SUBMITTED", "ARCHIVED"},
+    # SUBMITTED is terminal except for ARCHIVED -- plan 7.2 gives no
+    # "un-submit" or "resubmit" path, and complete() is a one-way door by
+    # design (see LearningOutputRepository.complete()).
+    "SUBMITTED": {"ARCHIVED"},
+    "ARCHIVED": set(),  # terminal, same convention as modules/sources
+}
+
+
+@dataclass
+class LearningOutput:
+    id: int
+    module_id: int
+    title: str
+    kind: Optional[str]
+    phase: Optional[int]
+    required: bool
+    status: str
+    source_file: Optional[str]
+    source_line: Optional[int]
+    evidence_level: Optional[str]
+    reference: Optional[str]
+
+
+_LEARNING_OUTPUT_COLUMNS = (
+    "id, module_id, title, kind, phase, required, status, source_file, "
+    "source_line, evidence_level, reference"
+)
+
+
+def _row_to_learning_output(row) -> LearningOutput:
+    return LearningOutput(
+        id=row[0], module_id=row[1], title=row[2], kind=row[3], phase=row[4],
+        required=bool(row[5]), status=row[6], source_file=row[7],
+        source_line=row[8], evidence_level=row[9], reference=row[10],
+    )
+
+
+class LearningOutputRepository:
+    """The only code that reads/writes learning_outputs.
+
+    Deliberately has no knowledge of sources or concepts: plan 7.2 forbids
+    "仅因 source 被 CONSUMED 就自动完成 output", so there must be no code
+    path anywhere (including here) that lets a source/concept transition
+    reach into this table. The only way an output becomes SUBMITTED is a
+    direct, explicit complete() call driven by the user (via `learn output
+    complete <output-id> --ref "..."`), never a side effect of anything
+    else's state machine.
+    """
+
+    def __init__(self, conn: sqlite3.Connection):
+        self._conn = conn
+
+    def create(
+        self,
+        *,
+        module_id: int,
+        title: str,
+        kind: Optional[str] = None,
+        phase: Optional[int] = None,
+        required: bool = False,
+        source_file: Optional[str] = None,
+        source_line: Optional[int] = None,
+        evidence_level: Optional[str] = None,
+    ) -> LearningOutput:
+        if evidence_level is not None and evidence_level not in {"PARTIAL", "STRONG"}:
+            raise ValueError(f"invalid evidence_level: {evidence_level!r}")
+        cur = self._conn.execute(
+            "INSERT INTO learning_outputs "
+            "(module_id, title, kind, phase, required, source_file, "
+            "source_line, evidence_level) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                module_id, title, kind, phase, int(required), source_file,
+                source_line, evidence_level,
+            ),
+        )
+        self._conn.commit()
+        return self.get(cur.lastrowid)
+
+    def get(self, output_id: int) -> LearningOutput:
+        row = self._conn.execute(
+            f"SELECT {_LEARNING_OUTPUT_COLUMNS} FROM learning_outputs WHERE id=?",
+            (output_id,),
+        ).fetchone()
+        if row is None:
+            raise KeyError(f"learning_output {output_id} not found")
+        return _row_to_learning_output(row)
+
+    def list_by_module(self, module_id: int) -> list[LearningOutput]:
+        rows = self._conn.execute(
+            f"SELECT {_LEARNING_OUTPUT_COLUMNS} FROM learning_outputs "
+            "WHERE module_id=? ORDER BY id ASC",
+            (module_id,),
+        ).fetchall()
+        return [_row_to_learning_output(row) for row in rows]
+
+    def set_status(
+        self, output_id: int, to_status: str, reason: Optional[str] = None,
+        actor: str = "user",
+    ) -> LearningOutput:
+        current = self.get(output_id)
+        allowed = LEARNING_OUTPUT_TRANSITIONS.get(current.status, set())
+        if to_status not in allowed:
+            raise InvalidTransitionError(
+                f"learning_output cannot transition from {current.status} "
+                f"to {to_status}"
+            )
+        self._conn.execute(
+            "UPDATE learning_outputs SET status=?, updated_at=datetime('now') "
+            "WHERE id=?",
+            (to_status, output_id),
+        )
+        _record_status_event(
+            self._conn, "learning_output", output_id, current.status,
+            to_status, reason, actor,
+        )
+        self._conn.commit()
+        return self.get(output_id)
+
+    def complete(
+        self, output_id: int, *, reference: str, actor: str = "user",
+    ) -> LearningOutput:
+        """The only path that writes `reference` and moves an output to
+        SUBMITTED (plan 7.2: "用户完成并提交 reference 后"). Requires a
+        non-empty reference -- there is no such thing as a reference-less
+        completion in this design, so a blank/whitespace-only string is
+        rejected the same as None rather than silently accepted."""
+        if reference is None or not reference.strip():
+            raise ValueError(
+                "complete() requires a non-empty reference "
+                "(plan 7.2: output completion means a submitted reference)"
+            )
+        current = self.get(output_id)
+        allowed = LEARNING_OUTPUT_TRANSITIONS.get(current.status, set())
+        if "SUBMITTED" not in allowed:
+            raise InvalidTransitionError(
+                f"learning_output cannot transition from {current.status} "
+                "to SUBMITTED"
+            )
+        self._conn.execute(
+            "UPDATE learning_outputs SET status='SUBMITTED', reference=?, "
+            "updated_at=datetime('now') WHERE id=?",
+            (reference, output_id),
+        )
+        _record_status_event(
+            self._conn, "learning_output", output_id, current.status,
+            "SUBMITTED", reason=None, actor=actor,
+        )
+        self._conn.commit()
+        return self.get(output_id)
