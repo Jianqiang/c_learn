@@ -1,9 +1,10 @@
 """TDD for the CLI (plan 12.1): `learn init/focus set/status/drill/learn/
-recall/review/apply/output list/output complete/retire/reactivate/export`,
-all as thin Typer wrappers around the existing service/repository layer.
-`learn import-syllabus` is out of scope for this module (plan 12.1 lists it,
-but Task 11's description only covers the commands above; import-syllabus
-belongs to the seed-content task).
+recall/review/apply/output list/output complete/retire/reactivate/export/
+backup/restore/import syllabus/import approve`, all as thin Typer wrappers
+around the existing service/repository layer. `learn import syllabus`/
+`learn import approve` are covered in tests/test_cli_import.py, not this
+file, to keep the M1 importer's CLI wiring tests next to each other rather
+than interleaved with the M0 command tests below.
 
 Every test drives the CLI through Typer's CliRunner and points `--db` at a
 tmp_path file, mirroring the `conn(tmp_path)` fixture style already used in

@@ -142,6 +142,9 @@ class Source:
     pace_mode: str
     scope_note: Optional[str]
     scope_confirmed: bool
+    source_file: Optional[str] = None
+    source_line: Optional[int] = None
+    content_hash: Optional[str] = None
 
 
 class SourceRepository:
@@ -173,10 +176,15 @@ class SourceRepository:
         self._conn.commit()
         return self.get(cur.lastrowid)
 
+    _COLUMNS = (
+        "id, module_id, slug, title, type, status, resource_mode, "
+        "pace_mode, scope_note, scope_confirmed, source_file, source_line, "
+        "content_hash"
+    )
+
     def get(self, source_id: int) -> Source:
         row = self._conn.execute(
-            "SELECT id, module_id, slug, title, type, status, resource_mode, "
-            "pace_mode, scope_note, scope_confirmed FROM sources WHERE id=?",
+            f"SELECT {self._COLUMNS} FROM sources WHERE id=?",
             (source_id,),
         ).fetchone()
         if row is None:
@@ -193,13 +201,41 @@ class SourceRepository:
         # is treated the same as "not found" -- SQL `slug=?` never matches
         # NULL, which is exactly the semantics we want here.
         row = self._conn.execute(
-            "SELECT id, module_id, slug, title, type, status, resource_mode, "
-            "pace_mode, scope_note, scope_confirmed FROM sources WHERE slug=?",
+            f"SELECT {self._COLUMNS} FROM sources WHERE slug=?",
             (slug,),
         ).fetchone()
         if row is None:
             raise KeyError(f"source '{slug}' not found")
         return self._row_to_source(row)
+
+    def find_by_location(self, source_file: str, source_line: int) -> Optional[Source]:
+        """Look up a previously-imported source by its (source_file,
+        source_line) provenance pair (plan 8.2: "用 file path + heading +
+        content hash 实现幂等导入"). Used by the syllabus importer to decide
+        whether a parsed heading/section is a brand-new source or a
+        re-parse of one that already exists, so re-running `learn
+        import-syllabus` against an unchanged file never inserts a
+        duplicate row. Returns None (not an exception) when nothing
+        matches, since "not found" is the expected, common case on first
+        import."""
+        row = self._conn.execute(
+            f"SELECT {self._COLUMNS} FROM sources "
+            "WHERE source_file=? AND source_line=?",
+            (source_file, source_line),
+        ).fetchone()
+        return self._row_to_source(row) if row is not None else None
+
+    def list_all(self) -> list[Source]:
+        """Every source, ordered by id. Used by the syllabus importer's
+        duplicate-candidate detection (plan 8.4: "重复出现的论文/课程 ->
+        canonical source + alias/import diff"), which must compare a
+        freshly parsed heading's title against every source already
+        persisted from *either* syllabus file, not just the one currently
+        being (re-)imported."""
+        rows = self._conn.execute(
+            f"SELECT {self._COLUMNS} FROM sources ORDER BY id ASC"
+        ).fetchall()
+        return [self._row_to_source(row) for row in rows]
 
     @staticmethod
     def _row_to_source(row) -> Source:
@@ -207,7 +243,73 @@ class SourceRepository:
             id=row[0], module_id=row[1], slug=row[2], title=row[3], type=row[4],
             status=row[5], resource_mode=row[6], pace_mode=row[7],
             scope_note=row[8], scope_confirmed=bool(row[9]),
+            source_file=row[10], source_line=row[11], content_hash=row[12],
         )
+
+    def update_draft_fields(
+        self, source_id: int, *, title: str, type: str, resource_mode: str,
+        pace_mode: str, url_or_path: Optional[str], estimated_minutes: Optional[int],
+        priority: Optional[str], scope_note: Optional[str], scope_confirmed: bool,
+        content_hash: Optional[str],
+    ) -> Source:
+        """Re-parse update path for the syllabus importer (plan 8.2:
+        "已存在且内容发生变化时...PROPOSED/VISIBLE 对象可重新解析"). Only
+        callable in spirit on PROPOSED/VISIBLE sources -- the importer
+        checks `.status` itself before calling this, but this method does
+        not re-check it, since it has no opinion on workflow state, only
+        on overwriting draft metadata columns. Never touches `status`,
+        `slug`, `scope_confirmed`->True, or any repository-owned workflow
+        field beyond the plain metadata plan 8.2 says a re-parse may
+        refresh."""
+        current = self.get(source_id)
+        self._conn.execute(
+            "UPDATE sources SET title=?, type=?, resource_mode=?, pace_mode=?, "
+            "url_or_path=?, estimated_minutes=?, priority=?, scope_note=?, "
+            "scope_confirmed=?, content_hash=?, updated_at=datetime('now') "
+            "WHERE id=?",
+            (
+                title, type, resource_mode, pace_mode, url_or_path,
+                estimated_minutes, priority, scope_note, int(scope_confirmed),
+                content_hash, source_id,
+            ),
+        )
+        _record_status_event(
+            self._conn, "source", source_id, current.status, current.status,
+            reason="metadata refreshed by `learn import-syllabus` re-parse "
+                   "(content_hash changed)",
+            actor="importer",
+        )
+        self._conn.commit()
+        return self.get(source_id)
+
+    def confirm_scope(
+        self, source_id: int, reason: Optional[str] = None, actor: str = "user",
+    ) -> Source:
+        """Explicitly flips `scope_confirmed` to True (plan 8.3's PROPOSED ->
+        QUEUED approval step, `learn import approve --confirm-scope`). Only
+        the importer's own gate cares about this column
+        (`set_status(..., "QUEUED")` above refuses to queue a source with
+        scope_confirmed=False whenever a scope_note is present) -- this
+        method has no opinion on `status` itself and never touches it, so
+        it composes cleanly with a subsequent `set_status(id, "QUEUED")`
+        call from the same CLI command without either call needing to know
+        about the other's job. Records a status_event with from==to status
+        (same convention as `update_draft_fields`) purely so the audit trail
+        shows *when* a human confirmed the scope, not just that QUEUED
+        later succeeded."""
+        current = self.get(source_id)
+        self._conn.execute(
+            "UPDATE sources SET scope_confirmed=1, updated_at=datetime('now') "
+            "WHERE id=?",
+            (source_id,),
+        )
+        _record_status_event(
+            self._conn, "source", source_id, current.status, current.status,
+            reason=reason or "scope confirmed via `learn import approve --confirm-scope`",
+            actor=actor,
+        )
+        self._conn.commit()
+        return self.get(source_id)
 
     def set_status(
         self, source_id: int, to_status: str, reason: Optional[str] = None,

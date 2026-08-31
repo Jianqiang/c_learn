@@ -15,10 +15,6 @@ callback and stashed on `ctx.obj`; Click contexts inherit `obj` from their
 parent by default, so nested groups see the same value with no extra
 plumbing.
 
-`learn import-syllabus` is intentionally not implemented here -- it belongs
-to the seed-content task (plan 8's importer), not to this command-wiring
-task.
-
 Minimal experience bar this module exists to satisfy (plan 12.1):
 "一次命令能继续 session；中断后不丢 attempt；没有 LLM 时 drill/recall/manual
 adjudication 仍能完成." start_or_resume()/record_attempt() (session_service)
@@ -44,6 +40,7 @@ from learning_os.repositories import (
     ItemRepository,
     LearningOutputRepository,
     ModuleRepository,
+    Source,
     SourceRepository,
 )
 from learning_os.services import backup_service
@@ -51,12 +48,15 @@ from learning_os.services.application_service import ApplicationService, Evidenc
 from learning_os.services.review_service import ReviewService
 from learning_os.services.seed_loader import seed_database
 from learning_os.services.session_service import SessionService
+from learning_os.services.syllabus_importer import ImportReport, import_syllabus
 
 app = typer.Typer(add_completion=False, no_args_is_help=True)
 output_app = typer.Typer(add_completion=False, no_args_is_help=True)
 focus_app = typer.Typer(add_completion=False, no_args_is_help=True)
+import_app = typer.Typer(add_completion=False, no_args_is_help=True)
 app.add_typer(output_app, name="output")
 app.add_typer(focus_app, name="focus")
+app.add_typer(import_app, name="import")
 
 
 @app.callback()
@@ -132,10 +132,10 @@ def seed(
 
     Idempotent by slug for modules/sources/concepts and by (concept, prompt)
     for items -- safe to re-run after `learn init` without duplicating rows.
-    This is distinct from the not-yet-implemented `learn import-syllabus`
-    (plan section 8's Markdown importer with ImportReport/dedup/content-hash,
-    explicit M1 scope): `seed` only replays already-reviewed YAML, it does
-    not parse or interpret the original syllabus Markdown files at all.
+    This is distinct from `learn import syllabus` (plan section 8's Markdown
+    importer with ImportReport/dedup/content-hash, M1 scope): `seed` only
+    replays already-reviewed YAML, it does not parse or interpret the
+    original syllabus Markdown files at all.
     """
     conn = _connect(ctx)
     try:
@@ -802,6 +802,136 @@ def restore(
         _fail(str(exc))
         return
     typer.echo(f"Restored {target_path} from {backup_path}")
+
+
+# ---------------------------------------------------------------------------
+# learn import syllabus <path> / learn import approve <source-id-or-slug>
+# ---------------------------------------------------------------------------
+#
+# syllabus_importer.py (plan section 8 / M1 milestone) has existed and been
+# unit-tested against both real syllabus files since before this CLI wiring,
+# but -- like `learn backup`/`restore` before the 2026-08-31 audit fix --
+# had no command anywhere that called it, so plan 8.3's full "parse -> report
+# -> persist draft -> approve PROPOSED -> QUEUED" pipeline was only reachable
+# from a test or a Python REPL, never from `learn` itself.
+
+def _print_import_report(report: ImportReport, path: str) -> None:
+    """Prints the ImportReport summary the plan 12.2 Web page's future
+    "Import Report: 确认/修改/批准导入对象" view is meant to mirror -- every
+    field on the report gets a line, not just the create/update counters,
+    so a human reviewing stdout has everything needed to decide what to
+    `learn import approve` next without re-running the importer or opening
+    the DB by hand."""
+    typer.echo(
+        f"Imported {path}: modules_created={report.modules_created} "
+        f"sources_created={report.sources_created} "
+        f"sources_updated={report.sources_updated} "
+        f"sources_skipped_duplicate={report.sources_skipped_duplicate} "
+        f"sources_skipped_locked={report.sources_skipped_locked} "
+        f"learning_outputs_created={report.learning_outputs_created}"
+    )
+    if report.duplicate_candidates:
+        typer.echo(f"Duplicate candidates ({len(report.duplicate_candidates)}):")
+        for dup in report.duplicate_candidates:
+            typer.echo(f"  '{dup.clean_title}':")
+            for source_file, source_line, raw_heading in dup.occurrences:
+                typer.echo(f"    {source_file}:{source_line}  {raw_heading}")
+    if report.unresolved:
+        typer.echo(f"Unresolved headings ({len(report.unresolved)}):")
+        for line in report.unresolved:
+            typer.echo(f"  {line}")
+    if report.warnings:
+        typer.echo(f"Warnings ({len(report.warnings)}):")
+        for line in report.warnings:
+            typer.echo(f"  {line}")
+
+
+@import_app.command("syllabus")
+def import_syllabus_cmd(
+    ctx: typer.Context,
+    path: str = typer.Argument(..., help="Path to a syllabus Markdown file to parse and import."),
+):
+    """Parse a syllabus Markdown file and persist its modules/sources/
+    learning_outputs as PROPOSED drafts (plan 8.3: parse -> report ->
+    persist draft). Safe to re-run against an unchanged or edited file --
+    idempotent by (source_file, source_line) + content_hash, never
+    silently overwrites a source that has already progressed past
+    PROPOSED/VISIBLE (see syllabus_importer.import_syllabus's docstring).
+    Nothing this command creates is QUEUED yet; run `learn import approve`
+    afterwards for each source you have reviewed and want to schedule.
+    """
+    if not Path(path).exists():
+        _fail(f"file not found: {path}")
+        return
+    conn = _connect(ctx)
+    try:
+        report = import_syllabus(conn, path)
+        _print_import_report(report, path)
+    finally:
+        conn.close()
+
+
+def _resolve_source_by_id_or_slug(conn: sqlite3.Connection, identifier: str) -> Source:
+    """Sources are the only content type with a nullable slug (plan 7.2:
+    not every source is meant to be addressed directly) -- the importer's
+    slug-collision fallback (`syllabus_importer._slugify`) means a freshly
+    imported draft may have no slug at all, so `learn import approve` must
+    also accept the numeric row id, not just a slug like every other CLI
+    target in this file. Tries a numeric id first only when `identifier`
+    parses as one; a slug that happens to be all-digits is not a real
+    possibility today (see `_slugify`'s ASCII-only, letter-containing
+    output) but even if it were, id lookup failing would fall through to
+    the slug lookup below rather than masking a real slug match."""
+    sources = SourceRepository(conn)
+    if identifier.isdigit():
+        try:
+            return sources.get(int(identifier))
+        except KeyError:
+            pass
+    return sources.get_by_slug(identifier)
+
+
+@import_app.command("approve")
+def import_approve(
+    ctx: typer.Context,
+    source: str = typer.Argument(
+        ..., help="Source id or slug (imported drafts without a slug must be "
+        "addressed by id -- see `learn import syllabus`'s printed report)."
+    ),
+    confirm_scope: bool = typer.Option(
+        False, "--confirm-scope",
+        help="Also confirm scope_note before queuing (required whenever the "
+             "importer extracted a scope_note candidate -- set_status() "
+             "refuses QUEUED with scope_confirmed=False otherwise).",
+    ),
+    reason: Optional[str] = typer.Option(
+        None, "--reason", help="Why this source is approved to enter the review queue.",
+    ),
+):
+    """Explicit PROPOSED -> QUEUED approval step (plan 8.3: "approve
+    PROPOSED -> QUEUED"; "未确认的 source 不得进入 Next Best Actions"). This
+    is the only CLI path that lets an imported draft start consuming
+    normal drill/review budget -- `learn import syllabus` never does this
+    automatically, no matter how confident the parse looked.
+    """
+    conn = _connect(ctx)
+    try:
+        try:
+            src = _resolve_source_by_id_or_slug(conn, source)
+        except KeyError:
+            _fail(f"source '{source}' not found (by id or slug)")
+            return
+        sources = SourceRepository(conn)
+        if confirm_scope:
+            sources.confirm_scope(src.id, reason=reason)
+        try:
+            updated = sources.set_status(src.id, "QUEUED", reason=reason)
+        except InvalidTransitionError as exc:
+            _fail(str(exc))
+            return
+        typer.echo(f"Source '{updated.slug or updated.id}' -> {updated.status}")
+    finally:
+        conn.close()
 
 
 if __name__ == "__main__":

@@ -35,7 +35,7 @@ source .venv/bin/activate
 python -m pytest -q
 ```
 
-As of the last verified run: **288/288 tests passing**. Re-run the
+As of the last verified run: **317/317 tests passing**. Re-run the
 command above yourself before trusting this number — it can drift with
 every commit.
 
@@ -146,6 +146,50 @@ backup_database(conn, "data/backups", now=datetime.now())   # -> data/backups/le
 restore_database("data/backups/learning_20260101_090000.db", "data/learning_restored.db")
 ```
 
+## Importing a Markdown syllabus (M1)
+
+`learn import syllabus <path>` parses a hand-written Markdown syllabus
+(the two real files in this repo's root, `投资技术学习清单.md` and
+`投资知识补充syllabus2.md`, are the M1 fixture target) and persists every
+module/source/learning-output it finds as `PROPOSED` drafts — nothing it
+creates is scheduled for review yet. Idempotent by (source file, heading
+line) + a content hash, so re-running it against an unmodified file is a
+no-op, and re-running it after you edit the Markdown only touches the
+sections that actually changed:
+
+```bash
+learn import syllabus "投资技术学习清单.md"
+learn import syllabus "投资知识补充syllabus2.md"
+```
+
+Each run prints a full `ImportReport`: created/updated/skipped counts,
+duplicate-title candidates (e.g. a paper referenced from both files),
+unresolved headings the parser could not confidently classify, and
+warnings for every lower-confidence guess it made (inferred
+`resource_mode`/`pace_mode`, extracted `scope_note`, unlabeled H2
+headings treated as low-confidence sources, slug collisions between two
+distinct CJK titles, etc.). Nothing on that list is applied silently —
+review it, then explicitly approve the sources you actually want to
+start working through:
+
+```bash
+learn import approve <source-slug-or-id>                    # PROPOSED -> QUEUED
+learn import approve <source-slug-or-id> --confirm-scope     # also confirms an extracted scope_note
+```
+
+`<source-slug-or-id>` accepts either the slug (most sources get one) or
+the numeric row id — the importer intentionally leaves `slug` unset
+rather than guessing a disambiguating suffix whenever two distinct
+titles would otherwise collapse to the same ASCII slug (real example:
+"Codex：我认为长期价值反而最大" and "让 Codex 做哪些工作？" both slugify
+to `codex`), so an id-based lookup is the only way to address those rows.
+`--confirm-scope` is required whenever the importer extracted a
+`scope_note` candidate (e.g. "不完整刷，只看第三章") — `set_status()`
+refuses to queue a source with `scope_confirmed=False`, exactly the same
+gate `learn apply`/`learn promote` rely on elsewhere, so a source with an
+unreviewed scope restriction can never silently start consuming normal
+review budget.
+
 ## Verifying a clean working tree
 
 ```bash
@@ -220,6 +264,17 @@ quickstart above is the actual, re-verified command chain.
   leaving already-inserted rows from earlier in the same run committed
   (2026-08-31 audit fix; `learn seed` also now reports a malformed-YAML
   failure as a clean `Error: ...` line instead of a raw traceback)
+- Markdown syllabus importer (M1, plan section 8), CLI-wired via `learn
+  import syllabus <path>` / `learn import approve <source-slug-or-id>
+  [--confirm-scope]` — parses either real syllabus file in this repo's
+  root into `PROPOSED`-draft modules/sources/learning_outputs, idempotent
+  by (source_file, source_line) + content hash, with duplicate-title
+  detection across files (the Teece 1986 case), an `ImportReport` printed
+  in full (created/updated/skipped/duplicates/unresolved/warnings), and
+  an explicit approval step before anything enters the review queue
+  (`learning_os/services/syllabus_importer.py`,
+  `SourceRepository.confirm_scope()`) — see "Importing a Markdown
+  syllabus" above for the full command reference
 - End-to-end integration tests covering the full M0 acceptance path at
   two layers:
   - service layer (`tests/test_end_to_end.py`): drill → leech/repair →
@@ -234,11 +289,12 @@ quickstart above is the actual, re-verified command chain.
 
 ## Known limitations / deferred to later milestones
 
-- No Markdown syllabus importer yet (M1: import report, source
-  location/hash, duplicate warning, PROPOSED→QUEUED confirmation flow,
-  `focus_state`/phase gate, CLI Next Best Actions) — `learn seed` only
-  replays already-reviewed YAML, it does not parse the original syllabus
-  Markdown files (`投资技术学习清单.md`, `投资知识补充syllabus2.md`) at all.
+- `focus_state`/phase gate and CLI Next Best Actions surfacing for
+  freshly imported sources are not yet wired to the importer above (M1
+  scope leftover) — a `PROPOSED`/`QUEUED` source created by `learn import
+  syllabus` does not yet automatically appear in `learn status`'s phase
+  view or influence `learning_os/services/recommendation_service.py`'s
+  suggestions the way hand-seeded content does.
 - Grader breadth is a deliberately small M0 subset (M2 scope: more
   numeric/unit/symbolic/discrimination edge cases and boundary tests
   beyond the KV cache/parameter memory/FLOPs concepts already covered).
@@ -250,9 +306,10 @@ quickstart above is the actual, re-verified command chain.
   usage.
 
 This is a runnable end-to-end CLI tool with both service-level and
-CLI-level tests behind the full drill→retire lifecycle, plus a working
-backup/restore command pair — see the Quickstart above for the exact
+CLI-level tests behind the full drill→retire lifecycle, a working
+backup/restore command pair, and a Markdown syllabus importer with an
+explicit approval gate — see the Quickstart above for the exact
 commands, which were re-run against a fresh SQLite file on 2026-08-31 and
 match `tests/test_cli_e2e.py`'s assertions. See "Known limitations" above
-for what is still genuinely missing (syllabus import, broader grader
-coverage, web UI, real-usage pilot).
+for what is still genuinely missing (Next Best Actions integration for
+imported sources, broader grader coverage, web UI, real-usage pilot).
