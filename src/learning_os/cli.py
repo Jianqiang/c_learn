@@ -235,6 +235,8 @@ def _run_deterministic_session(
     concept_slug: str,
     answer: str,
 ):
+    from datetime import datetime
+
     concepts = ConceptRepository(conn)
     try:
         concept = concepts.get_by_slug(concept_slug)
@@ -248,12 +250,45 @@ def _run_deterministic_session(
         return
     item = items[0]
 
+    # A QUEUED concept has never been worked on. Running drill/recall against
+    # it is itself the user's explicit act of starting to build/repair it
+    # (plan 6.3: "当前正在建立或修复"), so this is not the "系统不得静默改变
+    # concept 状态" violation plan 6.3 forbids -- the user just ran this
+    # exact command. This was previously missing entirely: the CLI drill/
+    # recall path never touched workflow_status at all, so a freshly seeded
+    # concept stayed QUEUED forever no matter how many drills were run
+    # against it, making every later `learn promote`/`learn retire` fail
+    # (2026-08-30 audit finding, P0).
+    if concept.workflow_status == "QUEUED":
+        concepts.set_status(concept.id, "ACTIVE", reason=f"started via `learn {session_type}`")
+
     sessions = SessionService(conn)
     session = sessions.start_or_resume(session_type=session_type, target_type="concept", target_id=concept.id)
 
     outcome = _grade_deterministic(item, answer)
     attempt = sessions.record_attempt(session.id, item.id, answer=answer, outcome=outcome, evaluator_kind="deterministic")
     sessions.end(session.id)
+
+    # Every graded attempt must feed the review scheduler, or review_state
+    # is never created and `learn review` reports an empty queue forever
+    # regardless of how much drilling happened (2026-08-30 audit finding,
+    # P1: "CLI drill 没有更新 review_state"). SKIPPED is not a real outcome
+    # here -- _grade_deterministic() never returns it -- so every call is a
+    # real scheduling event.
+    reviews = ReviewService(conn)
+    try:
+        reviews.record_outcome(item.id, outcome=outcome, now=datetime.now())
+    except ValueError:
+        # Item is already leeched (active=False) from a prior session; the
+        # attempt above is still recorded, but the scheduler intentionally
+        # refuses further updates until `learn repair` confirms a fix.
+        typer.echo(
+            f"[{session_type}] item {item.id}: {outcome} (attempt {attempt.id}) "
+            "-- item is suspended pending repair; run `learn repair "
+            f"{concept_slug}` before it can be scheduled again"
+        )
+        return
+
     typer.echo(f"[{session_type}] item {item.id}: {outcome} (attempt {attempt.id})")
 
 
@@ -380,6 +415,13 @@ def apply(
     concept_slug: str = typer.Argument(...),
     ref: str = typer.Option(..., "--ref", help="Reference describing the application."),
     strong: bool = typer.Option(False, "--strong", help="Mark as STRONG evidence (real research/case)."),
+    result: str = typer.Option(
+        "UNASSESSED", "--result",
+        help="SUCCESS/PARTIAL/FAILURE/UNASSESSED. promote_to_stable()'s "
+             "'2 different cases' gate only counts result=SUCCESS rows, so "
+             "this must be set explicitly to ever reach STABLE via the CLI "
+             "-- previously there was no way to set it at all here.",
+    ),
 ):
     """Record an application of a concept to a real problem or output."""
     conn = _connect(ctx)
@@ -391,15 +433,142 @@ def apply(
             _fail(f"concept '{concept_slug}' not found")
             return
         applications = ApplicationService(conn)
-        application = applications.record_application(
-            concept_id=concept.id,
-            evidence_level="STRONG" if strong else "PARTIAL",
-            reference=ref,
-        )
+        try:
+            application = applications.record_application(
+                concept_id=concept.id,
+                evidence_level="STRONG" if strong else "PARTIAL",
+                reference=ref,
+                result=result,
+            )
+        except ValueError as exc:
+            _fail(str(exc))
+            return
         typer.echo(
             f"Application recorded for '{concept_slug}': "
             f"{application.evidence_level} (application {application.id})"
         )
+    finally:
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
+# learn promote <concept-slug> --to usable|stable
+# ---------------------------------------------------------------------------
+
+@app.command()
+def promote(
+    ctx: typer.Context,
+    concept_slug: str = typer.Argument(...),
+    to: str = typer.Option(..., "--to", help="Target status: usable or stable."),
+    reason: Optional[str] = typer.Option(None, "--reason", help="Why this concept is ready."),
+    confirm_stable: bool = typer.Option(
+        False, "--confirm-stable",
+        help="User explicitly confirms stability, bypassing the 2-case count "
+             "requirement (plan 6.4's escape hatch). Only relevant for --to stable.",
+    ),
+):
+    """Promote a concept across its evidence-gated states (plan 6.4):
+    ACTIVE -> USABLE or USABLE -> STABLE. This is the CLI's only entry point
+    to ApplicationService.promote_to_usable()/promote_to_stable() -- before
+    this command existed, those gates were only reachable from the service
+    layer or a test, never from `learn` itself (2026-08-30 audit finding,
+    P0), so `learn apply` could record evidence but nothing in the CLI
+    could ever act on it to advance workflow_status."""
+    to_normalized = to.strip().upper()
+    if to_normalized not in {"USABLE", "STABLE"}:
+        _fail(f"--to must be 'usable' or 'stable', got {to!r}")
+        return
+
+    conn = _connect(ctx)
+    try:
+        concepts = ConceptRepository(conn)
+        try:
+            concept = concepts.get_by_slug(concept_slug)
+        except KeyError:
+            _fail(f"concept '{concept_slug}' not found")
+            return
+        applications = ApplicationService(conn)
+        try:
+            if to_normalized == "USABLE":
+                updated = applications.promote_to_usable(concept.id, reason=reason)
+            else:
+                updated = applications.promote_to_stable(
+                    concept.id, reason=reason, user_confirms_stable=confirm_stable,
+                )
+        except (EvidenceGateError, InvalidTransitionError) as exc:
+            _fail(str(exc))
+            return
+        typer.echo(f"Concept '{concept_slug}' -> {updated.workflow_status}")
+    finally:
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
+# learn repair <concept-slug>
+# ---------------------------------------------------------------------------
+
+@app.command()
+def repair(
+    ctx: typer.Context,
+    concept_slug: str = typer.Argument(...),
+    answer: Optional[str] = typer.Option(
+        None, "--answer",
+        help="If given, also records a fresh attempt on the leeched item "
+             "before confirming repair (a common real workflow: fix the "
+             "misunderstanding, then immediately re-attempt it).",
+    ),
+):
+    """Confirm a leeched item has been repaired (plan 10.4: 'rewrite item /
+    split concept / add source / manual / retire item' is the human choice
+    this command records having been made), putting it back on the 1-day
+    ladder. Before this command existed, ReviewService.confirm_repair() had
+    no CLI entry point at all, so a leeched item (3 consecutive MISS, or
+    4-of-5 non-PASS) could never be reviewed again via the CLI (2026-08-30
+    audit finding, related to P1 'CLI drill 没有更新 review_state')."""
+    from datetime import datetime
+
+    conn = _connect(ctx)
+    try:
+        concepts = ConceptRepository(conn)
+        try:
+            concept = concepts.get_by_slug(concept_slug)
+        except KeyError:
+            _fail(f"concept '{concept_slug}' not found")
+            return
+        items = ItemRepository(conn).list_by_concept(concept.id)
+        if not items:
+            _fail(f"concept '{concept_slug}' has no items to repair")
+            return
+        item = items[0]
+
+        reviews = ReviewService(conn)
+        try:
+            state = reviews.confirm_repair(item.id, now=datetime.now())
+        except KeyError:
+            _fail(f"item {item.id} has no review_state yet -- nothing to repair")
+            return
+        except ValueError as exc:
+            _fail(str(exc))
+            return
+
+        if answer is not None:
+            sessions = SessionService(conn)
+            session = sessions.start_or_resume(
+                session_type="drill", target_type="concept", target_id=concept.id,
+            )
+            outcome = _grade_deterministic(item, answer)
+            attempt = sessions.record_attempt(
+                session.id, item.id, answer=answer, outcome=outcome,
+                evaluator_kind="deterministic",
+            )
+            sessions.end(session.id)
+            state = reviews.record_outcome(item.id, outcome=outcome, now=datetime.now())
+            typer.echo(
+                f"Item {item.id} repaired and re-attempted: {outcome} "
+                f"(attempt {attempt.id}); due {state.due_at}"
+            )
+        else:
+            typer.echo(f"Item {item.id} repaired; back on the review ladder (due {state.due_at})")
     finally:
         conn.close()
 

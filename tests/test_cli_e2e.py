@@ -1,0 +1,235 @@
+"""CLI-layer end-to-end test for the M0 acceptance criterion (plan section
+14): "新环境初始化后，可从 drill 走到 apply，SQLite 中有完整可追溯记录"
+-- driven through the *actual* `learn` Typer app (CliRunner), not the
+service layer directly.
+
+Why this file exists (2026-08-30 audit finding, P0): tests/test_end_to_end.py
+already proves the service layer (ConceptRepository/SessionService/
+ReviewService/ApplicationService) composes correctly end-to-end. But an
+independent manual run of the exact command sequence README.md's Quickstart
+claimed was "smoke-tested" showed the CLI itself never actually closes the
+loop:
+
+- `learn drill` never transitions a QUEUED concept to ACTIVE.
+- `learn drill`/`learn recall` attempts never update review_state at all
+  (ReviewService.record_outcome() was never wired into the CLI path), so
+  `learn review` always reports an empty queue no matter how many attempts
+  were recorded.
+- There was no CLI command reaching promote_to_usable()/promote_to_stable()
+  at all -- `learn apply` only ever inserts an applications row, it never
+  advances workflow_status.
+- Consequently `learn retire` on a freshly-seeded concept always failed
+  with "concept cannot transition from QUEUED to RETIRED", because nothing
+  in the CLI path had ever moved the concept off QUEUED.
+
+This test drives the CLI exactly the way a real user (or the README
+Quickstart) would, and asserts on the resulting SQLite state after each
+step, so a future regression that silently breaks the CLI closure again
+(as opposed to the service layer, which test_end_to_end.py already guards)
+fails here first.
+"""
+from __future__ import annotations
+
+import sqlite3
+from pathlib import Path
+
+import pytest
+from typer.testing import CliRunner
+
+from learning_os.cli import app
+
+REAL_CONTENT_DIR = Path(__file__).resolve().parents[1] / "content"
+
+runner = CliRunner()
+
+
+def _run(db_path, *args):
+    return runner.invoke(app, ["--db", str(db_path), *args])
+
+
+@pytest.fixture()
+def seeded_db(tmp_path):
+    db_path = tmp_path / "learning.db"
+    init_result = _run(db_path, "init")
+    assert init_result.exit_code == 0, init_result.output
+    seed_result = _run(db_path, "seed", "--content-dir", str(REAL_CONTENT_DIR))
+    assert seed_result.exit_code == 0, seed_result.output
+    return db_path
+
+
+def _concept_status(db_path, slug: str) -> str:
+    conn = sqlite3.connect(str(db_path))
+    try:
+        row = conn.execute(
+            "SELECT workflow_status FROM concepts WHERE slug=?", (slug,)
+        ).fetchone()
+        return row[0]
+    finally:
+        conn.close()
+
+
+def test_drill_auto_activates_a_queued_concept(seeded_db):
+    assert _concept_status(seeded_db, "kv-cache") == "QUEUED"
+
+    result = _run(seeded_db, "drill", "kv-cache", "--answer", "21.47")
+    assert result.exit_code == 0, result.output
+
+    assert _concept_status(seeded_db, "kv-cache") == "ACTIVE"
+
+
+def test_drill_writes_a_review_state_row_so_review_is_not_always_empty(seeded_db):
+    _run(seeded_db, "drill", "kv-cache", "--answer", "21.47")
+
+    conn = sqlite3.connect(str(seeded_db))
+    try:
+        row = conn.execute(
+            "SELECT rs.due_at, rs.last_outcome FROM review_state rs "
+            "JOIN items i ON rs.item_id = i.id "
+            "JOIN concepts c ON i.concept_id = c.id "
+            "WHERE c.slug='kv-cache' AND i.reference_answer='21.47'"
+        ).fetchone()
+    finally:
+        conn.close()
+
+    assert row is not None, (
+        "drill never created a review_state row -- ReviewService.record_outcome() "
+        "is not wired into the CLI drill path"
+    )
+    due_at, last_outcome = row
+    assert due_at is not None
+    assert last_outcome == "PASS"
+
+
+def test_full_readme_quickstart_lifecycle_reaches_retired(seeded_db):
+    """Drives the exact command sequence the README Quickstart documents
+    (plus the `promote`/`repair`/`--result` additions this fix introduces)
+    and asserts the concept genuinely reaches RETIRED, with every hop
+    recorded in status_events -- the thing the manual audit run found does
+    NOT currently happen."""
+    db_path = seeded_db
+
+    # 1. drill: QUEUED -> ACTIVE, records a PASS attempt + review_state row.
+    result = _run(db_path, "drill", "kv-cache", "--answer", "21.47")
+    assert result.exit_code == 0, result.output
+    assert _concept_status(db_path, "kv-cache") == "ACTIVE"
+
+    # 2. apply: record a real-application evidence row (seed already gave
+    #    kv-cache one PARTIAL application per the 2026-08-30 audit's evidence
+    #    honesty fix, but recording another here matches the README's
+    #    documented `learn apply` step and doesn't depend on seed content).
+    result = _run(db_path, "apply", "kv-cache", "--ref", "smoke test application")
+    assert result.exit_code == 0, result.output
+
+    # 3. promote ACTIVE -> USABLE: this command did not exist before this
+    #    fix; promote_to_usable() was only reachable from the service layer.
+    result = _run(
+        db_path, "promote", "kv-cache", "--to", "usable",
+        "--reason", "core rubric atom passed + evidence on file",
+    )
+    assert result.exit_code == 0, result.output
+    assert "USABLE" in result.output
+    assert _concept_status(db_path, "kv-cache") == "USABLE"
+
+    # 4. recall: a later PASS on the same item is the delayed-recall proxy.
+    result = _run(db_path, "recall", "kv-cache", "--answer", "21.47")
+    assert result.exit_code == 0, result.output
+
+    # 5. apply twice more with --result success and --strong, to satisfy
+    #    promote_to_stable()'s "2 different cases + >=1 STRONG" gate. The
+    #    `--result` option did not exist before this fix -- `learn apply`
+    #    could only ever write result='UNASSESSED', making promote_to_stable()
+    #    permanently unreachable via the CLI.
+    result = _run(
+        db_path, "apply", "kv-cache", "--ref", "second real case", "--strong",
+        "--result", "SUCCESS",
+    )
+    assert result.exit_code == 0, result.output
+    result = _run(
+        db_path, "apply", "kv-cache", "--ref", "third real case", "--strong",
+        "--result", "SUCCESS",
+    )
+    assert result.exit_code == 0, result.output
+
+    # 6. promote USABLE -> STABLE.
+    result = _run(
+        db_path, "promote", "kv-cache", "--to", "stable",
+        "--reason", "delayed recall passed, 2 distinct SUCCESS cases on file",
+    )
+    assert result.exit_code == 0, result.output
+    assert "STABLE" in result.output
+    assert _concept_status(db_path, "kv-cache") == "STABLE"
+
+    # 7. retire STABLE -> RETIRED -- this is the exact command the manual
+    #    audit run found always failing with "cannot transition from QUEUED
+    #    to RETIRED" because nothing upstream had ever moved the concept.
+    result = _run(db_path, "retire", "kv-cache", "--reason", "pausing active review")
+    assert result.exit_code == 0, result.output
+    assert "RETIRED" in result.output
+    assert _concept_status(db_path, "kv-cache") == "RETIRED"
+
+    # 8. full traceability: every hop is in status_events with a reason.
+    conn = sqlite3.connect(str(db_path))
+    try:
+        concept_id = conn.execute(
+            "SELECT id FROM concepts WHERE slug='kv-cache'"
+        ).fetchone()[0]
+        rows = conn.execute(
+            "SELECT from_status, to_status, reason FROM status_events "
+            "WHERE entity_type='concept' AND entity_id=? ORDER BY id",
+            (concept_id,),
+        ).fetchall()
+    finally:
+        conn.close()
+    transitions = [(r[0], r[1]) for r in rows]
+    assert transitions == [
+        ("QUEUED", "ACTIVE"),
+        ("ACTIVE", "USABLE"),
+        ("USABLE", "STABLE"),
+        ("STABLE", "RETIRED"),
+    ]
+    assert all(r[2] for r in rows), "every recorded transition must carry a reason"
+
+    # 9. export still works at the end of the full lifecycle.
+    export_dir = db_path.parent / "export_out"
+    result = _run(db_path, "export", "--out", str(export_dir))
+    assert result.exit_code == 0, result.output
+    assert (export_dir / "concepts.json").exists()
+
+
+def test_repair_command_clears_a_leeched_item(seeded_db):
+    """Three consecutive MISS drills on the same item trip the leech rule
+    (plan 10.4); `learn repair` must be the CLI's way back onto the ladder
+    -- there was no such command before this fix, so a leeched item could
+    never be reviewed again via the CLI."""
+    db_path = seeded_db
+
+    for _ in range(3):
+        result = _run(db_path, "drill", "kv-cache", "--answer", "0")  # wrong -> MISS
+        assert result.exit_code == 0, result.output
+
+    conn = sqlite3.connect(str(db_path))
+    try:
+        item_id, active, intervention = conn.execute(
+            "SELECT rs.item_id, rs.active, rs.intervention_required FROM review_state rs "
+            "JOIN items i ON rs.item_id = i.id "
+            "JOIN concepts c ON i.concept_id = c.id "
+            "WHERE c.slug='kv-cache' AND i.reference_answer='21.47'"
+        ).fetchone()
+    finally:
+        conn.close()
+    assert active == 0
+    assert intervention == 1
+
+    result = _run(db_path, "repair", "kv-cache")
+    assert result.exit_code == 0, result.output
+
+    conn = sqlite3.connect(str(db_path))
+    try:
+        active, intervention = conn.execute(
+            "SELECT active, intervention_required FROM review_state WHERE item_id=?",
+            (item_id,),
+        ).fetchone()
+    finally:
+        conn.close()
+    assert active == 1
+    assert intervention == 0
