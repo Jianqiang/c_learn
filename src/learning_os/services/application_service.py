@@ -30,13 +30,28 @@ USABLE (ACTIVE -> USABLE)
 
 STABLE (USABLE -> STABLE)
     "delayed recall 通过" -> proxy: at least one attempt with outcome=PASS
-        on an item attempted during a session_type='recall' session (the
-        session type SessionService already uses to distinguish recall
-        practice from ordinary drills).
+        on an item attempted during a session_type='recall' session, where
+        that same item also has an earlier non-recall attempt predating the
+        recall PASS (the session type SessionService already uses to
+        distinguish recall practice from ordinary drills). The prior-
+        exposure requirement closes a 2026-08-30 audit finding: without it, a
+        recall session run as literally the first-ever interaction with an
+        item satisfied "delayed recall passed" even though nothing had
+        actually been recalled *after a delay* -- there was no earlier
+        learning episode to recall from.
     "两个不同 case 正确调用，或用户明确确认足够稳定" -> proxy: at least two
-        applications rows with result='SUCCESS', OR the caller passes
-        user_confirms_stable=True (the plan's explicit escape hatch for when
-        a user judges stability directly rather than via counted cases).
+        applications rows with result='SUCCESS' whose `reference` values
+        (trimmed of surrounding whitespace) are distinct, OR the caller
+        passes user_confirms_stable=True (the plan's explicit escape hatch
+        for when a user judges stability directly rather than via counted
+        cases). Rows with no reference (NULL or blank) are never deduplicated
+        against each other -- each still counts as its own case -- both for
+        back-compat with existing callers that never set `reference`, and
+        because an empty reference carries no information that two rows
+        actually describe the *same* case. This distinctness requirement
+        closes a 2026-08-30 audit finding: submitting the same reference
+        text (e.g. the same research episode) twice previously satisfied
+        "two different cases correctly applied."
     "没有未修复的 recurring misconception" -> proxy: for every item belonging
         to the concept, that item's most-recently-submitted attempt (if any)
         is not itself MISCONCEPTION. A MISCONCEPTION followed by a later
@@ -180,22 +195,50 @@ class ApplicationService:
         return row is not None
 
     def _has_delayed_recall_pass(self, concept_id: int) -> bool:
+        # Requires a recall-session PASS attempt on an item that *also* has
+        # an earlier non-recall attempt on the same item (attempts.id is
+        # monotonically increasing with insertion order, so a2.id < a.id is
+        # a reliable "happened before" check within this DB). Without this
+        # prior-exposure requirement, a recall session run as the first-ever
+        # interaction with an item would satisfy "delayed recall passed"
+        # even though nothing had actually been recalled after a delay --
+        # closes a 2026-08-30 audit finding.
         row = self._conn.execute(
             "SELECT 1 FROM attempts a "
             "JOIN items i ON a.item_id = i.id "
             "JOIN sessions s ON a.session_id = s.id "
             "WHERE i.concept_id = ? AND s.session_type = 'recall' "
-            "AND a.outcome = 'PASS' LIMIT 1",
+            "AND a.outcome = 'PASS' "
+            "AND EXISTS ("
+            "    SELECT 1 FROM attempts a2 "
+            "    JOIN sessions s2 ON a2.session_id = s2.id "
+            "    WHERE a2.item_id = a.item_id AND s2.session_type != 'recall' "
+            "    AND a2.id < a.id"
+            ") LIMIT 1",
             (concept_id,),
         ).fetchone()
         return row is not None
 
     def _successful_case_count(self, concept_id: int) -> int:
-        row = self._conn.execute(
-            "SELECT COUNT(*) FROM applications WHERE concept_id=? AND result='SUCCESS'",
+        # Deduplicate by trimmed `reference` text so the same case (e.g. the
+        # same research episode) submitted twice does not count as two
+        # distinct cases -- closes a 2026-08-30 audit finding. Rows with no
+        # reference (NULL or blank) are never merged with each other: each
+        # still counts as its own case, both for back-compat with callers
+        # that never set `reference` and because a blank reference carries
+        # no information that two rows describe the same case.
+        rows = self._conn.execute(
+            "SELECT reference FROM applications WHERE concept_id=? AND result='SUCCESS'",
             (concept_id,),
-        ).fetchone()
-        return row[0]
+        ).fetchall()
+        distinct_references: set[str] = set()
+        blank_reference_count = 0
+        for (reference,) in rows:
+            if reference is None or not reference.strip():
+                blank_reference_count += 1
+            else:
+                distinct_references.add(reference.strip())
+        return len(distinct_references) + blank_reference_count
 
     def _has_strong_application(self, concept_id: int) -> bool:
         row = self._conn.execute(

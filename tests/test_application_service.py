@@ -316,6 +316,114 @@ def test_promote_to_stable_repaired_misconception_does_not_block(
     assert concept.workflow_status == "STABLE"
 
 
+@pytest.fixture()
+def second_item_id(conn, active_concept_id) -> int:
+    cur = conn.execute(
+        "INSERT INTO items (concept_id, type, prompt, grading_mode, reference_answer) "
+        "VALUES (?, 'numeric', 'What is 3+3?', 'deterministic', '6')",
+        (active_concept_id,),
+    )
+    conn.commit()
+    return cur.lastrowid
+
+
+def test_promote_to_stable_recall_pass_without_prior_exposure_does_not_satisfy_gate(
+    service, sessions, usable_concept_id, second_item_id,
+):
+    # Audit finding (2026-08-30): _has_delayed_recall_pass only checked "does
+    # a recall-session PASS attempt exist anywhere for this concept" with no
+    # requirement that the item had been *exposed* before (i.e. drilled) --
+    # so a recall session run as literally the very first interaction with
+    # an item could satisfy "delayed recall passed" even though nothing was
+    # ever recalled after a delay; there was no prior learning episode to
+    # recall from. second_item_id here has never been drilled -- a recall
+    # PASS on it, with no earlier non-recall attempt on the same item, must
+    # not count toward the delayed-recall gate. (usable_concept_id's own
+    # item_id already has a prior drill PASS from the usable_concept_id
+    # fixture, so this test intentionally exercises a *different*, never-
+    # touched item to isolate the missing-prior-exposure case.)
+    _pass_delayed_recall(sessions, second_item_id)
+    service.record_application(
+        concept_id=usable_concept_id, evidence_level="STRONG", result="SUCCESS",
+    )
+    service.record_application(
+        concept_id=usable_concept_id, evidence_level="STRONG", result="SUCCESS",
+    )
+    with pytest.raises(EvidenceGateError):
+        service.promote_to_stable(usable_concept_id)
+
+
+def test_promote_to_stable_case_count_deduplicates_same_reference(
+    service, sessions, item_id, usable_concept_id,
+):
+    # Audit finding (2026-08-30): _successful_case_count counted raw
+    # applications rows with result='SUCCESS', so the *same* reference
+    # (e.g. the same research episode) submitted twice satisfied "two
+    # different cases correctly applied" -- plan 6.4 requires two distinct
+    # cases, not one case counted twice.
+    _pass_delayed_recall(sessions, item_id)
+    service.record_application(
+        concept_id=usable_concept_id, evidence_level="STRONG", result="SUCCESS",
+        reference="episode-123",
+    )
+    service.record_application(
+        concept_id=usable_concept_id, evidence_level="STRONG", result="SUCCESS",
+        reference="episode-123",
+    )
+    with pytest.raises(EvidenceGateError):
+        service.promote_to_stable(usable_concept_id)
+
+
+def test_promote_to_stable_case_count_dedup_trims_whitespace(
+    service, sessions, item_id, usable_concept_id,
+):
+    _pass_delayed_recall(sessions, item_id)
+    service.record_application(
+        concept_id=usable_concept_id, evidence_level="STRONG", result="SUCCESS",
+        reference="episode-123",
+    )
+    service.record_application(
+        concept_id=usable_concept_id, evidence_level="STRONG", result="SUCCESS",
+        reference="  episode-123  ",
+    )
+    with pytest.raises(EvidenceGateError):
+        service.promote_to_stable(usable_concept_id)
+
+
+def test_promote_to_stable_case_count_counts_distinct_references_separately(
+    service, sessions, item_id, usable_concept_id,
+):
+    _pass_delayed_recall(sessions, item_id)
+    service.record_application(
+        concept_id=usable_concept_id, evidence_level="STRONG", result="SUCCESS",
+        reference="episode-123",
+    )
+    service.record_application(
+        concept_id=usable_concept_id, evidence_level="STRONG", result="SUCCESS",
+        reference="episode-456",
+    )
+    concept = service.promote_to_stable(usable_concept_id, reason="two distinct cases")
+    assert concept.workflow_status == "STABLE"
+
+
+def test_promote_to_stable_case_count_blank_references_do_not_dedupe_together(
+    service, sessions, item_id, usable_concept_id,
+):
+    # Back-compat: applications recorded with no reference at all (the
+    # common case for existing tests/seed data) must each still count as
+    # their own case rather than collapsing into a single "case" just
+    # because they share an empty reference.
+    _pass_delayed_recall(sessions, item_id)
+    service.record_application(
+        concept_id=usable_concept_id, evidence_level="STRONG", result="SUCCESS",
+    )
+    service.record_application(
+        concept_id=usable_concept_id, evidence_level="STRONG", result="SUCCESS",
+    )
+    concept = service.promote_to_stable(usable_concept_id, reason="two blank-reference cases")
+    assert concept.workflow_status == "STABLE"
+
+
 def test_promote_to_stable_requires_strong_application(
     service, sessions, item_id, usable_concept_id,
 ):
