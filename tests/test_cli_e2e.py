@@ -233,3 +233,46 @@ def test_repair_command_clears_a_leeched_item(seeded_db):
         conn.close()
     assert active == 1
     assert intervention == 0
+
+
+def test_seed_reports_a_clean_error_and_writes_nothing_on_malformed_content(tmp_path):
+    """2026-08-31 audit companion fix: seed_database() is now transactional
+    (tests/test_seed_loader.py covers the rollback itself at the service
+    layer), but the CLI must also surface the failure as a normal `Error:`
+    message -- not a raw Python traceback -- and the caller must be able to
+    trust that a failed `learn seed` left zero rows behind, without having
+    to inspect the database by hand."""
+    db_path = tmp_path / "learning.db"
+    assert _run(db_path, "init").exit_code == 0
+
+    content_dir = tmp_path / "bad_content"
+    (content_dir / "concepts").mkdir(parents=True)
+    (content_dir / "items").mkdir(parents=True)
+    (content_dir / "modules.yaml").write_text(
+        "modules:\n  - slug: mod-x\n    name: 'Module X'\n    phase: 1\n"
+    )
+    (content_dir / "sources.yaml").write_text("sources: []\n")
+    (content_dir / "concepts" / "concept-x.yaml").write_text(
+        "concept:\n  slug: concept-x\n  module_slug: mod-x\n  name: 'Concept X'\n"
+        "sources: []\n"
+    )
+    # Missing the required `grading_mode` key -> KeyError deep in seed_database().
+    (content_dir / "items" / "concept-x.yaml").write_text(
+        "items:\n  - type: numeric\n    prompt: 'broken item'\n"
+        "    reference_answer: '0'\n"
+    )
+
+    result = _run(db_path, "seed", "--content-dir", str(content_dir))
+
+    assert result.exit_code != 0
+    assert "Traceback" not in result.output, (
+        "seed failure must be reported as a clean CLI error, not a raw traceback"
+    )
+    assert "Error:" in result.output
+
+    conn = sqlite3.connect(str(db_path))
+    try:
+        assert conn.execute("SELECT COUNT(*) FROM modules").fetchone()[0] == 0
+        assert conn.execute("SELECT COUNT(*) FROM concepts").fetchone()[0] == 0
+    finally:
+        conn.close()

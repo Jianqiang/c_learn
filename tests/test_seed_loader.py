@@ -41,6 +41,12 @@ from learning_os.repositories import (
 from learning_os.services.application_service import ApplicationService
 from learning_os.services.seed_loader import load_content, seed_database
 
+# 每张表都独立 `.commit()`（见 seed_loader.py 顶部 docstring），2026-08-31 owner
+# 审计指出：如果 seed 在写到一半时失败（例如某个 items/*.yaml 文件里有格式错误
+# 的行），之前已经 commit 过的 modules/sources/concepts 行会永久留在数据库里，
+# 而不是全部撤销——半成品数据库。下面这组测试断言 seed_database() 必须是
+# all-or-nothing：任何一步失败，此前在同一次调用里写入的所有行都必须回滚。
+
 
 @pytest.fixture()
 def conn(tmp_path):
@@ -262,3 +268,98 @@ def test_seed_database_real_content_dir_loads_cleanly(conn):
     assert result.concepts_created == 7
     assert 10 <= result.items_created <= 15
     assert result.applications_created == 2
+
+
+# ---------------------------------------------------------------------------
+# seed_database: transactional all-or-nothing (2026-08-31 audit finding)
+# ---------------------------------------------------------------------------
+#
+# Before this fix, every repository call inside seed_database() committed
+# independently. If a later YAML file turned out to be malformed (e.g. an
+# item missing a required key), seed_database() would raise -- but every
+# module/source/concept/item already inserted in that same call stayed
+# committed. Re-running `learn seed` after fixing the bad file would then
+# hit "slug already exists" idempotency short-circuits for the partial rows
+# and silently skip re-validating them, leaving a half-seeded database that
+# looks superficially fine. seed_database() must instead behave as a single
+# atomic unit: any exception rolls back every row written during that call.
+
+@pytest.fixture()
+def content_dir_with_malformed_second_concept(content_dir):
+    """content_dir (concept-a, valid) plus a second concept (concept-b)
+    whose item file is missing the required `grading_mode` key. Module
+    mod-a / concept-a / concept-a's items are all well-formed and would
+    succeed on their own -- concept-b is what blows up load-side processing
+    partway through seed_database()'s write loop, after concept-a's rows
+    have already been written by earlier iterations of the same call."""
+    (content_dir / "concepts" / "concept-b.yaml").write_text(
+        textwrap.dedent(
+            """
+            concept:
+              slug: concept-b
+              module_slug: mod-a
+              name: "Concept B"
+              importance: core
+            sources: []
+            """
+        )
+    )
+    (content_dir / "items" / "concept-b.yaml").write_text(
+        textwrap.dedent(
+            """
+            items:
+              - type: numeric
+                prompt: "broken item, no grading_mode"
+                reference_answer: "0"
+            """
+        )
+    )
+    return content_dir
+
+
+def test_seed_database_rolls_back_everything_on_a_malformed_item(
+    conn, content_dir_with_malformed_second_concept
+):
+    with pytest.raises(KeyError):
+        seed_database(conn, content_dir_with_malformed_second_concept)
+
+    # Nothing from this failed call should have been left committed --
+    # not concept-a's module/source/concept/items (written by earlier loop
+    # iterations in the same call), and not concept-b itself (written just
+    # before the malformed item that caused the KeyError).
+    assert conn.execute("SELECT COUNT(*) FROM modules").fetchone()[0] == 0
+    assert conn.execute("SELECT COUNT(*) FROM sources").fetchone()[0] == 0
+    assert conn.execute("SELECT COUNT(*) FROM concepts").fetchone()[0] == 0
+    assert conn.execute("SELECT COUNT(*) FROM items").fetchone()[0] == 0
+    assert conn.execute("SELECT COUNT(*) FROM applications").fetchone()[0] == 0
+
+
+def test_seed_database_succeeds_normally_after_a_rolled_back_attempt(
+    conn, content_dir_with_malformed_second_concept
+):
+    """A rollback must not leave the connection/transaction state broken --
+    a subsequent successful seed_database() call (e.g. after the user fixes
+    the YAML) must still work and must not be blocked by phantom
+    already-exists rows from the failed attempt."""
+    with pytest.raises(KeyError):
+        seed_database(conn, content_dir_with_malformed_second_concept)
+
+    # Fix concept-b's item file and retry -- this should now fully succeed,
+    # including the rows that were rolled back on the first attempt.
+    (content_dir_with_malformed_second_concept / "items" / "concept-b.yaml").write_text(
+        textwrap.dedent(
+            """
+            items:
+              - type: numeric
+                prompt: "fixed item"
+                grading_mode: deterministic
+                reference_answer: "0"
+            """
+        )
+    )
+    result = seed_database(conn, content_dir_with_malformed_second_concept)
+
+    assert result.modules_created == 1
+    assert result.concepts_created == 2
+    assert conn.execute("SELECT COUNT(*) FROM concepts").fetchone()[0] == 2
+    assert conn.execute("SELECT COUNT(*) FROM items").fetchone()[0] == 3

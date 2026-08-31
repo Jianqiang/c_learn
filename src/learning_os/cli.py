@@ -32,6 +32,7 @@ from pathlib import Path
 from typing import Optional
 
 import typer
+import yaml
 
 from learning_os import config
 from learning_os.db import init_db
@@ -138,7 +139,21 @@ def seed(
     """
     conn = _connect(ctx)
     try:
-        result = seed_database(conn, content_dir)
+        try:
+            result = seed_database(conn, content_dir)
+        except (KeyError, ValueError, yaml.YAMLError) as exc:
+            # seed_database() is transactional (2026-08-31 audit fix): any
+            # exception here has already rolled back every row from this
+            # call, so the database is left exactly as it was before `seed`
+            # ran. Report this plainly instead of a raw traceback -- and
+            # confirm the "no partial rows left behind" guarantee so the
+            # user does not have to inspect the DB by hand to trust it.
+            _fail(
+                f"seed content in {content_dir!r} is malformed ({exc}) -- "
+                "no rows were written (seed_database is all-or-nothing); "
+                "fix the YAML and re-run `learn seed`"
+            )
+            return
         typer.echo(
             f"Seeded from {content_dir}: modules={result.modules_created} "
             f"sources={result.sources_created} concepts={result.concepts_created} "

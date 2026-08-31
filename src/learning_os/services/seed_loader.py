@@ -222,15 +222,76 @@ class SeedResult:
     applications_created: int = 0
 
 
+class _DeferredCommitConnection:
+    """A thin proxy around a real sqlite3.Connection that turns every
+    `.commit()` call into a no-op until `_flush()` is called explicitly.
+
+    Why this exists (2026-08-31 audit finding): every repository/service
+    used by seed_database() below (ModuleRepository, SourceRepository,
+    ConceptRepository, ItemRepository, ApplicationService) calls
+    `self._conn.commit()` right after its own INSERT, independently of every
+    other repository. That is the right default for normal CLI usage (each
+    `learn drill`/`learn apply` etc. is one user action, one commit), but it
+    means seed_database()'s multi-table write loop was never atomic: if
+    module/source/concept rows for an earlier item in the loop had already
+    committed by the time a later item raised (e.g. a malformed YAML file),
+    those earlier rows stayed in the database permanently -- a half-seeded
+    database with no way to tell "fully seeded" apart from "partially seeded
+    then crashed" just by looking at row counts.
+
+    Wrapping `conn` in this proxy for the duration of seed_database() lets
+    every repository call site stay unchanged (they still call
+    `self._conn.execute(...)` and `self._conn.commit()` exactly as before --
+    `execute` and every other attribute pass straight through via
+    `__getattr__`), while seed_database() itself decides once, at the very
+    end, whether to actually commit (all writes succeeded) or roll back
+    (any exception propagated) -- true all-or-nothing semantics without
+    touching a single repository.
+    """
+
+    def __init__(self, real_conn: sqlite3.Connection):
+        self._real_conn = real_conn
+
+    def commit(self) -> None:
+        pass  # deferred until seed_database() finishes successfully
+
+    def _flush(self) -> None:
+        self._real_conn.commit()
+
+    def __getattr__(self, name: str):
+        return getattr(self._real_conn, name)
+
+
 def seed_database(conn: sqlite3.Connection, content_dir: str | Path) -> SeedResult:
     content = load_content(content_dir)
     result = SeedResult()
 
-    modules = ModuleRepository(conn)
-    sources = SourceRepository(conn)
-    concepts = ConceptRepository(conn)
-    item_repo = ItemRepository(conn)
-    applications_service = ApplicationService(conn)
+    deferred = _DeferredCommitConnection(conn)
+    modules = ModuleRepository(deferred)
+    sources = SourceRepository(deferred)
+    concepts = ConceptRepository(deferred)
+    item_repo = ItemRepository(deferred)
+    applications_service = ApplicationService(deferred)
+
+    try:
+        _seed_all(content, result, modules, sources, concepts, item_repo, applications_service)
+    except Exception:
+        conn.rollback()
+        raise
+    else:
+        deferred._flush()
+    return result
+
+
+def _seed_all(
+    content: SeedContent,
+    result: SeedResult,
+    modules: ModuleRepository,
+    sources: SourceRepository,
+    concepts: ConceptRepository,
+    item_repo: ItemRepository,
+    applications_service: ApplicationService,
+) -> None:
 
     module_ids: dict[str, int] = {}
     for m in content.modules:
@@ -318,5 +379,3 @@ def seed_database(conn: sqlite3.Connection, content_dir: str | Path) -> SeedResu
             note=a.note, evidence=a.evidence, result=a.result,
         )
         result.applications_created += 1
-
-    return result
