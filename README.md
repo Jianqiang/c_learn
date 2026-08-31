@@ -35,28 +35,73 @@ source .venv/bin/activate
 python -m pytest -q
 ```
 
-As of the last verified run: **271/271 tests passing**. Re-run the
+As of the last verified run: **280/280 tests passing**. Re-run the
 command above yourself before trusting this number — it can drift with
 every commit.
 
 ## Quickstart (CLI)
 
 Once installed (see Setup above), the `learn` console-script is on your
-`PATH` inside the venv. A full run from a clean environment, seeding the
-real vertical-slice content shipped in this repo's `content/` directory:
+`PATH` inside the venv. This is the full `QUEUED → ACTIVE → USABLE →
+STABLE → RETIRED` lifecycle from a clean environment, seeding the real
+vertical-slice content shipped in this repo's `content/` directory — every
+command below was re-run against a fresh temp SQLite file on 2026-08-30
+and confirmed to work exactly as shown (see "What's implemented" below for
+the earlier README claim about this quickstart that turned out **not** to
+be true, and how it was fixed):
 
 ```bash
 source .venv/bin/activate
 learn init                                  # creates data/learning.db
 learn seed --content-dir content            # loads modules/sources/concepts/items/applications
-learn status                                # list modules
-learn status kv-cache                       # show one concept's workflow_status
-learn drill kv-cache --answer 21.47         # deterministic drill, records a PASS/MISS attempt
-learn apply kv-cache --ref "real application note" --strong
-learn review                                # show today's due-for-review batch (12 item / 20 min budget)
+learn status kv-cache                       # QUEUED
+
+learn drill kv-cache --answer 21.47         # PASS attempt; auto-advances QUEUED -> ACTIVE
+learn status kv-cache                       # ACTIVE
+
+learn apply kv-cache --ref "real application note"      # PARTIAL evidence, unlocks USABLE gate
+learn promote kv-cache --to usable --reason "core rubric atom passed + evidence on file"
+learn status kv-cache                       # USABLE
+
+learn recall kv-cache --answer 21.47        # delayed-recall PASS, required for the STABLE gate
+learn apply kv-cache --ref "case A" --strong --result SUCCESS   # 1st distinct SUCCESS case
+learn apply kv-cache --ref "case B" --strong --result SUCCESS   # 2nd distinct SUCCESS case
+learn promote kv-cache --to stable --reason "delayed recall + two distinct SUCCESS cases + strong evidence"
+learn status kv-cache                       # STABLE
+
+learn review                                # today's due-for-review batch (12 item / 20 min budget)
 learn retire kv-cache --reason "pausing active review"
+learn status kv-cache                       # RETIRED
+
 learn export --out ./export_out             # dumps every runtime table to JSON
 ```
+
+Notes on the commands above:
+
+- `learn drill` / `learn recall` auto-advance a `QUEUED` concept to
+  `ACTIVE` the first time you run them — this is treated as your explicit
+  act of starting to work the concept, not a silent transition (plan 6.3).
+  They also write the attempt's outcome into `review_state`, so `learn
+  review` actually reflects what you've drilled instead of always showing
+  an empty queue.
+- `--ref` on `learn apply` must be a **distinct** string per case you want
+  counted separately toward the STABLE gate's "2 different cases" proxy —
+  submitting the same `--ref` text twice only counts once (whitespace-
+  trimmed comparison).
+- `--result SUCCESS` on `learn apply` is required for a case to count
+  toward that same STABLE gate; the default is `UNASSESSED`, which does
+  not count.
+- `learn promote --to usable|stable` is the only CLI path that actually
+  moves `workflow_status` forward past `ACTIVE`; recording an application
+  with `learn apply` by itself does not advance the concept.
+- Right after `promote --to stable`, `learn review` reporting "No items
+  due for review" is expected, not a bug — a PASS attempt schedules the
+  item roughly a day out, so it legitimately has nothing due yet.
+- If an item gets 3 consecutive MISS/MISCONCEPTION outcomes it is
+  "leeched" (suspended from scheduling); `learn drill`/`learn recall`
+  against it will report this and point you at `learn repair
+  <concept-slug> [--answer ...]`, which confirms the repair and,
+  optionally, records one more attempt in the same command.
 
 `--db <path>` is a top-level option that works before any subcommand
 (default: `data/learning.db`, relative to the current working directory):
@@ -64,13 +109,6 @@ learn export --out ./export_out             # dumps every runtime table to JSON
 ```bash
 learn --db /tmp/scratch.db init
 ```
-
-Every command above was smoke-tested end-to-end in a fresh temp directory
-while writing this README (`init` → `seed` → `drill` → `apply` → `review`
-→ `status` → `export`, all against a brand-new SQLite file) — this is the
-same path `tests/test_end_to_end.py` exercises at the service layer,
-confirming plan section 14's M0 acceptance criterion: "新环境初始化后，可从
-drill 走到 apply，SQLite 中有完整可追溯记录。"
 
 ## Backup & restore
 
@@ -107,10 +145,20 @@ git status --short
 Should print nothing. If you see `?? .workbuddy/...`, that's the local
 agent work-memory directory (gitignored, not part of the product).
 
-## What's implemented (M0 vertical slice — complete)
+## What's implemented (M0 vertical slice)
 
 Every M0 acceptance item from `Personal_Learning_OS_v1_Tech_Plan.md`
-section 14 is done, each backed by its own TDD suite:
+section 14 is done, each backed by its own TDD suite. **Status note
+(2026-08-30):** an earlier version of this README claimed the CLI layer
+was fully closed based on the service-level test suite passing. An owner
+audit that day showed this was false — running the quickstart above by
+hand, `drill` never advanced `workflow_status` past `QUEUED`, `review`
+always reported an empty queue, and `retire` failed outright, because no
+CLI command ever called `set_status()`/`promote_to_usable()`/
+`promote_to_stable()`. That gap has since been closed (see "CLI (Typer)
+wiring" below) and is now covered by a real subprocess-style CLI test
+(`tests/test_cli_e2e.py`) in addition to the service-level test — the
+quickstart above is the actual, re-verified command chain.
 
 - SQLite schema + idempotent migration runner (`learning_os/db.py`)
 - Module/Source/Concept repository layer with explicit state machines
@@ -129,7 +177,11 @@ section 14 is done, each backed by its own TDD suite:
 - Applications & concept status evidence gates
   (QUEUED→ACTIVE→USABLE→STABLE→RETIRED→REACTIVATED, each promotion to
   USABLE/STABLE/RETIRED mechanically checked against real attempt/
-  application rows, never bypassable by a hand-written reason string)
+  application rows, never bypassable by a hand-written reason string;
+  STABLE's "delayed recall" proxy requires the recalled item to have an
+  earlier non-recall attempt, and its "2 different cases" proxy dedupes
+  by trimmed `reference` text, so neither can be satisfied by a single
+  exposure or a repeated submission — 2026-08-30 audit fix)
   (`learning_os/services/application_service.py`)
 - Next Best Actions recommendation service
   (`learning_os/services/recommendation_service.py`)
@@ -137,16 +189,31 @@ section 14 is done, each backed by its own TDD suite:
   restore" above) and JSON/CSV export
   (`learning_os/services/backup_service.py`)
 - CLI (Typer) wiring for every `learn` subcommand listed in the
-  Quickstart above (`learning_os/cli.py`)
+  Quickstart above, **including `learn promote` and `learn repair`**
+  (added 2026-08-30) — before these existed, `promote_to_usable()`,
+  `promote_to_stable()`, and `ReviewService.confirm_repair()` had no CLI
+  entry point at all, and `drill`/`recall` never wrote to `review_state`
+  or advanced `workflow_status`, so the CLI could record evidence via
+  `apply` but never act on it (`learning_os/cli.py`)
 - Seed vertical-slice content (7 real concepts across 3 modules,
-  10–15 items, 2 real research-note applications — `content/*.yaml`)
-  + idempotent loader (`learning_os/services/seed_loader.py`)
-- End-to-end integration test covering the full M0 acceptance path —
-  drill → leech/repair → recall → apply → promote_to_usable → review
-  selection → apply (2 more SUCCESS cases) → promote_to_stable → retire
-  — against the real `content/` seed, asserting the resulting
-  `status_events`/`attempts`/`applications`/`concept_sources` rows are a
-  complete, traceable record (`tests/test_end_to_end.py`)
+  10–15 items, 2 evidence-backed applications — one PARTIAL, one pair of
+  STRONG applications recorded live in `tests/test_end_to_end.py`;
+  `content/applications.yaml`'s seed rows were downgraded from STRONG to
+  PARTIAL on 2026-08-30 because they are unverified personal-research
+  recollections with no locatable episode/file artifact, not checkable
+  records — `content/*.yaml`) + idempotent loader
+  (`learning_os/services/seed_loader.py`)
+- End-to-end integration tests covering the full M0 acceptance path at
+  two layers:
+  - service layer (`tests/test_end_to_end.py`): drill → leech/repair →
+    recall → apply → promote_to_usable → review selection → apply
+    (2 more SUCCESS cases) → promote_to_stable → retire, asserting the
+    resulting `status_events`/`attempts`/`applications`/`concept_sources`
+    rows are a complete, traceable record
+  - CLI layer (`tests/test_cli_e2e.py`, added 2026-08-30): the same
+    lifecycle driven exclusively through Typer's `CliRunner` (no service-
+    layer shortcuts), proving the commands in the Quickstart above
+    actually work, not just the services behind them
 
 ## Known limitations / deferred to later milestones
 
@@ -154,7 +221,23 @@ section 14 is done, each backed by its own TDD suite:
   underlying service (`backup_service.backup_database()`/
   `restore_database()`) is implemented and tested, but only reachable
   from Python today (see "Backup & restore" above); only `learn export`
-  (JSON dump) is CLI-wired so far.
+  (JSON dump) is CLI-wired so far. Plan section 14's M0 acceptance
+  criterion literally asks for "SQLite 单文件 backup 和 JSON export 的最小
+  命令可用" — the backup/restore *service* meets this, but there is no
+  minimal *CLI command* for backup/restore yet, so this line item is only
+  partially satisfied at the CLI layer.
+- `seed_database()` (`learning_os/services/seed_loader.py`) is not
+  transactional — each repository's `create()` call commits independently
+  as modules/sources/concepts/items/applications are inserted in
+  sequence. If seeding fails partway through (e.g. malformed YAML further
+  down the file, or a DB error), the rows already committed before the
+  failure point remain in the database — there is no preflight validation
+  of the whole YAML set and no all-or-nothing transaction wrapping the
+  five insert loops. Rerunning `learn seed` against the same DB is
+  idempotent for rows that already exist (matched by prompt/reference),
+  so a fresh `learn init` + `learn seed` from scratch is the safe recovery
+  path if a seed run is suspected to have failed partway (2026-08-30 audit
+  finding, not yet fixed).
 - No Markdown syllabus importer yet (M1: import report, source
   location/hash, duplicate warning, PROPOSED→QUEUED confirmation flow,
   `focus_state`/phase gate, CLI Next Best Actions) — `learn seed` only
@@ -170,6 +253,10 @@ section 14 is done, each backed by its own TDD suite:
   application evidence count, etc.) have not been measured against real
   usage.
 
-This is now a runnable end-to-end tool, not just a verified backend —
-see the Quickstart above for the exact commands that were smoke-tested
-against a fresh SQLite file while writing this README.
+This is a runnable end-to-end CLI tool with both service-level and
+CLI-level tests behind the full drill→retire lifecycle — see the
+Quickstart above for the exact commands, which were re-run against a
+fresh SQLite file on 2026-08-30 and match `tests/test_cli_e2e.py`'s
+assertions. See "Known limitations" above for what is still genuinely
+missing (backup/restore CLI commands, seed transactionality, syllabus
+import, broader grader coverage, web UI, real-usage pilot).
