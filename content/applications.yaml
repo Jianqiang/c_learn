@@ -1,30 +1,50 @@
 # Seed application references (plan 5.3: "2 个真实 research/case
 # application reference"). These give the vertical slice at least one
-# STRONG evidence_level application per domain so the M0 acceptance test
+# evidence-backed application per domain so the M0 acceptance test
 # (drill -> recall -> review -> apply -> retire, plan section 14) has a
-# real, non-synthetic `learn apply` example to run end-to-end, and so
-# ApplicationService's evidence gates (plan 6.4) have real data to check
-# against instead of only test fixtures.
+# `learn apply` example to run end-to-end, and so ApplicationService's
+# evidence gates (plan 6.4) have real data to check against instead of only
+# test fixtures.
+#
+# Honesty note (2026-08-30 owner audit, corrected same day): these two
+# entries were originally recorded as evidence_level=STRONG with free-text
+# reference/note strings but no episode ID, no verifiable artifact path, and
+# no reference to a checkable research record. Plan 6.4 defines STRONG
+# evidence as coming from "real research/case" transfer -- these two
+# judgments *are* real investment-research judgment calls the owner made,
+# but the owner confirmed on review that neither has a locatable
+# episode/file artifact behind it, so calling them STRONG conflated "the
+# owner's genuine recollection of having applied this" with the higher bar
+# plan 6.4 intends STRONG to certify (a checkable record). They are recorded
+# here as evidence_level=PARTIAL instead, with reference/note text stating
+# plainly that this is unverified personal research recollection, not a
+# checkable episode/file. If a real episode ID or artifact path is ever
+# located for either, it should be upgraded back to STRONG with that
+# citation attached.
 applications:
   - concept_slug: kv-cache
-    evidence_level: STRONG
+    evidence_level: PARTIAL
     reference_type: research_note
     reference: >
-      co_investor 全球 capex 筛选中，用 KV cache 公式估算了长鑫存储
-      (CXMT) 下游客户长上下文推理场景的显存瓶颈，用于判断存储扩产
-      需求弹性（2026-08 vertical-slice seed note）。
+      个人投研记忆判断（无正式 episode/文件可核对）：在 co_investor 全球
+      capex 筛选工作中，回忆曾用 KV cache 公式估算长鑫存储 (CXMT) 下游
+      客户长上下文推理场景的显存瓶颈，用于判断存储扩产需求弹性
+      （2026-08 vertical-slice seed note；2026-08-30 audit 后改记为
+      PARTIAL，因无可核实的 episode ID 或 artifact 路径）。
     note: >
-      真实应用：把 kv-cache 公式套用到具体客户的 batch/seq_len 假设，
-      用于支持存储 capex 需求判断，而非纯练习题。
+      个人投研记忆判断，非纯练习题，但目前没有正式 episode/文件可核对
+      这次应用的具体时间、输入假设或产出记录。
 
   - concept_slug: value-capture
-    evidence_level: STRONG
+    evidence_level: PARTIAL
     reference_type: research_note
     reference: >
-      在评估 CXMT IPO 主题候选标的时，用 value creation vs value capture
-      框架判断设备/材料环节相对于晶圆厂本身谁更可能捕获扩产周期的
-      经济利润，用于筛选候选标的的护城河来源（2026-08 vertical-slice
-      seed note）。
+      个人投研记忆判断（无正式 episode/文件可核对）：在评估 CXMT IPO
+      主题候选标的时，回忆曾用 value creation vs value capture 框架判断
+      设备/材料环节相对于晶圆厂本身谁更可能捕获扩产周期的经济利润，
+      用于筛选候选标的的护城河来源（2026-08 vertical-slice seed note；
+      2026-08-30 audit 后改记为 PARTIAL，因无可核实的 episode ID 或
+      artifact 路径）。
     note: >
-      真实应用：不是练习题，而是投研筛选过程中实际使用该框架做出的
-      判断依据之一。
+      个人投研记忆判断，非纯练习题，但目前没有正式 episode/文件可核对
+      这次应用的具体时间、输入假设或产出记录。

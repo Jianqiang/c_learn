@@ -233,14 +233,22 @@ def test_full_drill_to_retire_lifecycle_leaves_traceable_sqlite_record(seeded):
         ("PASS", "recall"),
     ]
 
-    # -- 13. full traceability: applications table holds all 3 real,
-    # non-synthetic evidence records for this concept (1 seeded + 2 recorded
-    # above), and the seeded source rows this concept links to keep their
-    # source_file/source_line provenance from content/sources.yaml --------
+    # -- 13. full traceability: applications table holds all 3 evidence
+    # records for this concept (1 seeded + 2 recorded above), and the
+    # seeded source rows this concept links to keep their source_file/
+    # source_line provenance from content/sources.yaml --------------------
+    # content/applications.yaml's seed row for kv-cache is evidence_level=
+    # PARTIAL (2026-08-30 audit: downgraded from STRONG because it is an
+    # unverified personal research recollection with no locatable
+    # episode/file artifact -- see content/applications.yaml's header
+    # comment). The two applications recorded live above in this test
+    # (step 8) are STRONG and are what actually satisfies
+    # promote_to_stable()'s "at least one STRONG application" gate.
     application_rows = applications.list_applications(concept.id)
     assert len(application_rows) == 3
     assert sum(1 for a in application_rows if a.result == "SUCCESS") == 2
-    assert all(a.evidence_level == "STRONG" for a in application_rows)
+    assert sum(1 for a in application_rows if a.evidence_level == "STRONG") == 2
+    assert sum(1 for a in application_rows if a.evidence_level == "PARTIAL") == 1
 
     source_rows = conn.execute(
         "SELECT src.source_file, src.source_line FROM sources src "
