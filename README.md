@@ -35,7 +35,7 @@ source .venv/bin/activate
 python -m pytest -q
 ```
 
-As of the last verified run: **317/317 tests passing**. Re-run the
+As of the last verified run: **318/318 tests passing**. Re-run the
 command above yourself before trusting this number — it can drift with
 every commit.
 
@@ -286,6 +286,16 @@ quickstart above is the actual, re-verified command chain.
     lifecycle driven exclusively through Typer's `CliRunner` (no service-
     layer shortcuts), proving the commands in the Quickstart above
     actually work, not just the services behind them
+  - CLI review scheduling, time-travel-tested (`tests/test_cli_e2e.py`'s
+    `test_review_only_surfaces_an_item_once_its_due_at_has_actually_passed`,
+    added 2026-08-30): `learn review` calls `datetime.now()` internally
+    with no injection point and this project has no `freezegun`
+    dependency, so the test instead rewrites the persisted `due_at` string
+    directly in SQLite (the same format `ReviewService` itself writes) to
+    simulate the clock advancing, then asserts `learn review` is silent
+    before that point and correctly surfaces the item once due_at is in
+    the past — proving the CLI genuinely reads and respects `due_at`
+    rather than always returning everything or nothing
 
 ## Known limitations / deferred to later milestones
 

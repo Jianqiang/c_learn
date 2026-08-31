@@ -100,6 +100,79 @@ def test_drill_writes_a_review_state_row_so_review_is_not_always_empty(seeded_db
     assert last_outcome == "PASS"
 
 
+def test_review_only_surfaces_an_item_once_its_due_at_has_actually_passed(seeded_db):
+    """CLI-layer time-travel test for the review scheduling loop (plan 10.5).
+
+    `learn review`'s CLI wiring (cli.py's `review` command) calls
+    `ReviewService.select_batch(now=datetime.now())` with the real system
+    clock and no injection point, and this project has no `freezegun`
+    dependency installed. So this test can't mock time directly -- instead
+    it exploits the fact that ReviewService persists `due_at` as a plain
+    `"%Y-%m-%d %H:%M:%S"` string (review_service.py's `_DATE_FMT`) and
+    `due_items()`'s SQL is a simple `due_at <= ?` comparison against
+    whatever `now` the caller passes in. Writing a due_at string directly
+    via sqlite3 is therefore equivalent to advancing the clock, without
+    touching the CLI process's own `datetime.now()`.
+
+    This closes a real gap: test_drill_writes_a_review_state_row_so_review_is_not_always_empty
+    only asserts a review_state row exists with due_at IS NOT NULL. It never
+    asserts (a) that a freshly-scheduled item is correctly absent from
+    `learn review`'s output before its due_at, nor (b) that the exact same
+    item becomes visible in `learn review`'s output once due_at is in the
+    past -- i.e. that the CLI's review command is actually reading and
+    respecting due_at, rather than e.g. always returning everything or
+    always returning nothing.
+    """
+    db_path = seeded_db
+
+    # 1. A correct drill answer records a PASS, which the baseline scheduler
+    #    (schedulers/baseline.py, ladder day 1) schedules 1 day into the
+    #    future from now -- not immediately due.
+    result = _run(db_path, "drill", "kv-cache", "--answer", "21.47")
+    assert result.exit_code == 0, result.output
+
+    conn = sqlite3.connect(str(db_path))
+    try:
+        item_id = conn.execute(
+            "SELECT i.id FROM items i JOIN concepts c ON i.concept_id = c.id "
+            "WHERE c.slug='kv-cache' AND i.reference_answer='21.47'"
+        ).fetchone()[0]
+    finally:
+        conn.close()
+
+    # 2. Right after the PASS, due_at is ~1 day out, so this item must NOT
+    #    be due yet. The seeded content has no other pre-existing
+    #    review_state rows (those are only created by a CLI drill/recall
+    #    call), so the batch should be empty.
+    before = _run(db_path, "review")
+    assert before.exit_code == 0, before.output
+    assert "No items due for review." in before.output
+    assert f"item {item_id}:" not in before.output
+
+    # 3. Time-travel: rewrite due_at to a moment in the past, using the same
+    #    "%Y-%m-%d %H:%M:%S" format ReviewService._fmt()/_parse() use, so
+    #    the very next `learn review` call's real-clock `now` will compare
+    #    as due_at <= now.
+    from datetime import datetime, timedelta
+
+    past = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S")
+    conn = sqlite3.connect(str(db_path))
+    try:
+        conn.execute(
+            "UPDATE review_state SET due_at=? WHERE item_id=?", (past, item_id)
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+    # 4. Now that due_at has "passed", the same CLI command -- with no other
+    #    change -- must surface the item with a human-readable reason.
+    after = _run(db_path, "review")
+    assert after.exit_code == 0, after.output
+    assert "No items due for review." not in after.output
+    assert f"item {item_id}: due for review" in after.output
+
+
 def test_full_readme_quickstart_lifecycle_reaches_retired(seeded_db):
     """Drives the exact command sequence the README Quickstart documents
     (plus the `promote`/`repair`/`--result` additions this fix introduces)
