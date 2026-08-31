@@ -722,7 +722,7 @@ def reactivate(
 def export(
     ctx: typer.Context,
     out: str = typer.Option(..., "--out", help="Output directory for JSON export."),
-):
+    ):
     """Export every runtime table to `<out>/<table>.json` (plan 7.1, 12.1)."""
     conn = _connect(ctx)
     try:
@@ -730,6 +730,78 @@ def export(
         typer.echo(f"Exported {len(written)} tables to {Path(out)}")
     finally:
         conn.close()
+
+
+# ---------------------------------------------------------------------------
+# learn backup [--out <dir>] / learn restore <backup-path>
+# ---------------------------------------------------------------------------
+#
+# backup_service.backup_database()/restore_database() have existed and been
+# unit-tested since M0 (tests/test_backup_export.py), but no CLI command
+# ever called them (2026-08-31 audit finding, P2) -- `learn export` (JSON
+# dump) was the only CLI-wired path, so plan 14's M0 acceptance line "SQLite
+# 单文件 backup 和 JSON export 的最小命令可用" was only half-satisfied: the
+# backup *service* existed, the backup *command* did not.
+
+@app.command()
+def backup(
+    ctx: typer.Context,
+    out: Optional[str] = typer.Option(
+        None, "--out",
+        help="Directory to write the backup file into (default: "
+             "'backups/' next to the current database file, matching "
+             "plan 13.2's suggested project layout).",
+    ),
+):
+    """Write a full-fidelity, restorable SQLite backup of the current
+    database to `<out>/learning_<YYYYMMDD_HHMMSS>.db` (plan 7.1: 'SQLite 单
+    文件 backup，支持从 backup 恢复'). Uses sqlite3's online backup API, so
+    it is safe to run even if another process has an open session against
+    the same database file -- it copies page-by-page under SQLite's own
+    locking rather than risking a raw file copy mid-write.
+    """
+    from datetime import datetime
+
+    db_path = config.resolve_db_path(_db_from_ctx(ctx))
+    backup_dir = Path(out) if out else Path(db_path).parent / "backups"
+
+    conn = _connect(ctx)
+    try:
+        backup_path = backup_service.backup_database(conn, backup_dir, now=datetime.now())
+    finally:
+        conn.close()
+    typer.echo(f"Backup written to {backup_path}")
+
+
+@app.command()
+def restore(
+    ctx: typer.Context,
+    backup_path: str = typer.Argument(
+        ..., help="Path to a backup file previously produced by `learn backup`.",
+    ),
+):
+    """Restore the current database from a backup file, overwriting
+    whatever is currently at the resolved `--db` path (plan 7.1's 'backup
+    支持从 backup 恢复' round-trip requirement). Refuses to restore a file
+    that is not a valid learning_os SQLite database (wrong path, or a file
+    that is not this project's schema at all) rather than silently
+    producing a target DB that fails on the first real query.
+
+    This closes the current connection to the database *before* restoring
+    (SQLite's own backup API cannot safely overwrite a file a live
+    connection still has open), then reopens it afterwards only long enough
+    to confirm the restore succeeded.
+    """
+    target_path = config.resolve_db_path(_db_from_ctx(ctx))
+    try:
+        backup_service.restore_database(backup_path, target_path)
+    except FileNotFoundError as exc:
+        _fail(str(exc))
+        return
+    except ValueError as exc:
+        _fail(str(exc))
+        return
+    typer.echo(f"Restored {target_path} from {backup_path}")
 
 
 if __name__ == "__main__":

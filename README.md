@@ -35,7 +35,7 @@ source .venv/bin/activate
 python -m pytest -q
 ```
 
-As of the last verified run: **280/280 tests passing**. Re-run the
+As of the last verified run: **288/288 tests passing**. Re-run the
 command above yourself before trusting this number — it can drift with
 every commit.
 
@@ -45,7 +45,7 @@ Once installed (see Setup above), the `learn` console-script is on your
 `PATH` inside the venv. This is the full `QUEUED → ACTIVE → USABLE →
 STABLE → RETIRED` lifecycle from a clean environment, seeding the real
 vertical-slice content shipped in this repo's `content/` directory — every
-command below was re-run against a fresh temp SQLite file on 2026-08-30
+command below was re-run against a fresh temp SQLite file on 2026-08-31
 and confirmed to work exactly as shown (see "What's implemented" below for
 the earlier README claim about this quickstart that turned out **not** to
 be true, and how it was fixed):
@@ -73,6 +73,7 @@ learn review                                # today's due-for-review batch (12 i
 learn retire kv-cache --reason "pausing active review"
 learn status kv-cache                       # RETIRED
 
+learn backup                                # data/backups/learning_<timestamp>.db, a restorable copy
 learn export --out ./export_out             # dumps every runtime table to JSON
 ```
 
@@ -112,12 +113,28 @@ learn --db /tmp/scratch.db init
 
 ## Backup & restore
 
-Backup/restore is implemented as a service (`learning_os.services.
-backup_service.backup_database()` / `restore_database()`, tested in
-`tests/test_backup_export.py`) but does **not** yet have a `learn backup`/
-`learn restore` CLI command — only `learn export` (JSON dump, not a
-restorable backup) is wired to the CLI so far. To back up or restore
-today, call the service functions directly from a Python shell:
+```bash
+learn backup                                # -> data/backups/learning_<YYYYMMDD_HHMMSS>.db
+learn backup --out /tmp/my-backups          # custom backup directory
+learn restore data/backups/learning_20260101_090000.db   # overwrites the current --db target
+```
+
+`learn backup` (added 2026-08-31 — before this, backup/restore was only
+reachable from Python, see below) uses SQLite's own online backup API
+(`sqlite3.Connection.backup()`), so it is safe to run even with a session
+in flight elsewhere against the same file — it copies page-by-page under
+SQLite's own locking rather than risking a raw file copy mid-write.
+`--out` defaults to `backups/` next to the current `--db` path (matching
+plan 13.2's suggested `data/backups/` layout).
+
+`learn restore <backup-path>` refuses to treat an arbitrary file as a
+backup: it raises a clean `Error: ...` (not a traceback) if the path
+doesn't exist, or if it exists but isn't a SQLite file with this
+project's `schema_migrations` table — a path typo fails loudly instead of
+silently producing a target database that breaks on the first real query.
+
+The same logic is also available directly from Python if you need it
+outside the CLI (e.g. scripting a backup rotation):
 
 ```python
 from datetime import datetime
@@ -128,13 +145,6 @@ conn = init_db("data/learning.db")
 backup_database(conn, "data/backups", now=datetime.now())   # -> data/backups/learning_<timestamp>.db
 restore_database("data/backups/learning_20260101_090000.db", "data/learning_restored.db")
 ```
-
-`backup_database()` uses SQLite's own online backup API (`sqlite3.
-Connection.backup()`), so it is safe to call against a connection with a
-session in flight. `restore_database()` refuses to treat an arbitrary
-file as a backup — it raises `ValueError` if the source isn't a SQLite
-file with this project's `schema_migrations` table, so a path typo fails
-loudly instead of producing a broken target database.
 
 ## Verifying a clean working tree
 
@@ -185,9 +195,10 @@ quickstart above is the actual, re-verified command chain.
   (`learning_os/services/application_service.py`)
 - Next Best Actions recommendation service
   (`learning_os/services/recommendation_service.py`)
-- SQLite single-file backup/restore (service-level, see "Backup &
-  restore" above) and JSON/CSV export
-  (`learning_os/services/backup_service.py`)
+- SQLite single-file backup/restore, now CLI-wired via `learn backup`/
+  `learn restore` (added 2026-08-31 — before this only the underlying
+  service functions existed, with no CLI command reaching them at all),
+  plus JSON/CSV export (`learning_os/services/backup_service.py`)
 - CLI (Typer) wiring for every `learn` subcommand listed in the
   Quickstart above, **including `learn promote` and `learn repair`**
   (added 2026-08-30) — before these existed, `promote_to_usable()`,
@@ -201,8 +212,14 @@ quickstart above is the actual, re-verified command chain.
   `content/applications.yaml`'s seed rows were downgraded from STRONG to
   PARTIAL on 2026-08-30 because they are unverified personal-research
   recollections with no locatable episode/file artifact, not checkable
-  records — `content/*.yaml`) + idempotent loader
-  (`learning_os/services/seed_loader.py`)
+  records — `content/*.yaml`) + an idempotent, **atomic** loader
+  (`learning_os/services/seed_loader.py`) — `seed_database()` wraps every
+  repository/service call in a deferred-commit proxy and only flushes a
+  single real commit if every module/source/concept/item/application
+  insert succeeds; any exception rolls back the entire call instead of
+  leaving already-inserted rows from earlier in the same run committed
+  (2026-08-31 audit fix; `learn seed` also now reports a malformed-YAML
+  failure as a clean `Error: ...` line instead of a raw traceback)
 - End-to-end integration tests covering the full M0 acceptance path at
   two layers:
   - service layer (`tests/test_end_to_end.py`): drill → leech/repair →
@@ -217,27 +234,6 @@ quickstart above is the actual, re-verified command chain.
 
 ## Known limitations / deferred to later milestones
 
-- `learn backup` / `learn restore` CLI commands don't exist yet — the
-  underlying service (`backup_service.backup_database()`/
-  `restore_database()`) is implemented and tested, but only reachable
-  from Python today (see "Backup & restore" above); only `learn export`
-  (JSON dump) is CLI-wired so far. Plan section 14's M0 acceptance
-  criterion literally asks for "SQLite 单文件 backup 和 JSON export 的最小
-  命令可用" — the backup/restore *service* meets this, but there is no
-  minimal *CLI command* for backup/restore yet, so this line item is only
-  partially satisfied at the CLI layer.
-- `seed_database()` (`learning_os/services/seed_loader.py`) is not
-  transactional — each repository's `create()` call commits independently
-  as modules/sources/concepts/items/applications are inserted in
-  sequence. If seeding fails partway through (e.g. malformed YAML further
-  down the file, or a DB error), the rows already committed before the
-  failure point remain in the database — there is no preflight validation
-  of the whole YAML set and no all-or-nothing transaction wrapping the
-  five insert loops. Rerunning `learn seed` against the same DB is
-  idempotent for rows that already exist (matched by prompt/reference),
-  so a fresh `learn init` + `learn seed` from scratch is the safe recovery
-  path if a seed run is suspected to have failed partway (2026-08-30 audit
-  finding, not yet fixed).
 - No Markdown syllabus importer yet (M1: import report, source
   location/hash, duplicate warning, PROPOSED→QUEUED confirmation flow,
   `focus_state`/phase gate, CLI Next Best Actions) — `learn seed` only
@@ -254,9 +250,9 @@ quickstart above is the actual, re-verified command chain.
   usage.
 
 This is a runnable end-to-end CLI tool with both service-level and
-CLI-level tests behind the full drill→retire lifecycle — see the
-Quickstart above for the exact commands, which were re-run against a
-fresh SQLite file on 2026-08-30 and match `tests/test_cli_e2e.py`'s
-assertions. See "Known limitations" above for what is still genuinely
-missing (backup/restore CLI commands, seed transactionality, syllabus
-import, broader grader coverage, web UI, real-usage pilot).
+CLI-level tests behind the full drill→retire lifecycle, plus a working
+backup/restore command pair — see the Quickstart above for the exact
+commands, which were re-run against a fresh SQLite file on 2026-08-31 and
+match `tests/test_cli_e2e.py`'s assertions. See "Known limitations" above
+for what is still genuinely missing (syllabus import, broader grader
+coverage, web UI, real-usage pilot).

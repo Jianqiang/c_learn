@@ -276,3 +276,81 @@ def test_seed_reports_a_clean_error_and_writes_nothing_on_malformed_content(tmp_
         assert conn.execute("SELECT COUNT(*) FROM concepts").fetchone()[0] == 0
     finally:
         conn.close()
+
+
+# ---------------------------------------------------------------------------
+# learn backup / learn restore (2026-08-31 audit finding, P2)
+# ---------------------------------------------------------------------------
+#
+# backup_service.backup_database()/restore_database() have been implemented
+# and unit-tested (tests/test_backup_export.py) since M0, but no `learn`
+# command ever called them -- only `learn export` (JSON dump) was CLI-wired.
+# Plan 14's M0 acceptance line "SQLite 单文件 backup 和 JSON export 的最小命令
+# 可用" was therefore only half-true: the backup *service* existed, but the
+# backup *command* did not. These tests drive the new `learn backup` /
+# `learn restore` commands through the real CLI.
+
+def test_backup_creates_a_dated_sqlite_file_in_the_backups_dir(seeded_db, tmp_path):
+    backups_dir = tmp_path / "backups"
+    result = _run(seeded_db, "backup", "--out", str(backups_dir))
+    assert result.exit_code == 0, result.output
+
+    files = list(backups_dir.glob("learning_*.db"))
+    assert len(files) == 1, f"expected exactly one backup file, found {files}"
+
+    # The backup must be a real, independently-openable SQLite file with the
+    # same seeded data, not just a marker file.
+    conn = sqlite3.connect(str(files[0]))
+    try:
+        row = conn.execute("SELECT slug FROM concepts WHERE slug='kv-cache'").fetchone()
+        assert row is not None
+    finally:
+        conn.close()
+
+
+def test_backup_defaults_out_dir_to_backups_next_to_the_db(seeded_db):
+    result = _run(seeded_db, "backup")
+    assert result.exit_code == 0, result.output
+
+    default_backups_dir = seeded_db.parent / "backups"
+    files = list(default_backups_dir.glob("learning_*.db"))
+    assert len(files) == 1, (
+        f"expected `learn backup` with no --out to default to "
+        f"{default_backups_dir}, found {files}"
+    )
+
+
+def test_restore_recovers_a_backup_over_the_current_db(seeded_db, tmp_path):
+    backups_dir = tmp_path / "backups"
+    backup_result = _run(seeded_db, "backup", "--out", str(backups_dir))
+    assert backup_result.exit_code == 0, backup_result.output
+    backup_file = next(backups_dir.glob("learning_*.db"))
+
+    # Drill kv-cache after the backup was taken, so current DB state now
+    # differs from the backup (QUEUED -> ACTIVE).
+    drill_result = _run(seeded_db, "drill", "kv-cache", "--answer", "21.47")
+    assert drill_result.exit_code == 0, drill_result.output
+    assert _concept_status(seeded_db, "kv-cache") == "ACTIVE"
+
+    restore_result = _run(seeded_db, "restore", str(backup_file))
+    assert restore_result.exit_code == 0, restore_result.output
+
+    # The restored DB should reflect the pre-drill (backed-up) state again.
+    assert _concept_status(seeded_db, "kv-cache") == "QUEUED"
+
+
+def test_restore_rejects_a_file_that_is_not_a_learning_os_backup(seeded_db, tmp_path):
+    bogus = tmp_path / "not_a_backup.db"
+    bogus.write_text("this is not sqlite at all")
+
+    result = _run(seeded_db, "restore", str(bogus))
+    assert result.exit_code != 0
+    assert "Traceback" not in result.output
+    assert "Error:" in result.output
+
+
+def test_restore_reports_a_clean_error_for_a_missing_backup_file(seeded_db, tmp_path):
+    result = _run(seeded_db, "restore", str(tmp_path / "does_not_exist.db"))
+    assert result.exit_code != 0
+    assert "Traceback" not in result.output
+    assert "Error:" in result.output
