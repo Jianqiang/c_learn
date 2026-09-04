@@ -77,6 +77,29 @@ learn backup                                # data/backups/learning_<timestamp>.
 learn export --out ./export_out             # dumps every runtime table to JSON
 ```
 
+## Active core curriculum
+
+The active learning basis is the 16-week project-led curriculum in
+[`content/core_curriculum.yaml`](/Users/jma/PycharmProjects/c_learn/content/core_curriculum.yaml).
+It starts on 2026-08-31 (the current calendar week) and follows:
+
+`Tech Change → Constraint → Architecture → Rent → Capital Response → FCF → Expectations → Position`
+
+Each week is a bounded plan for selective learning, one real project,
+decision reps, and one output. The manifest is orchestration metadata: it
+does not create concepts, queue every source, or claim mastery. Use the CLI
+to see the current week or inspect another week:
+
+```bash
+learn curriculum show
+learn curriculum show --week 8
+learn curriculum show --date 2026-09-04
+```
+
+Then explicitly connect the week's work to the existing OS with `learn
+focus set`, `learn import approve`, `learn drill`/`recall`, `learn apply`,
+and `learn output complete` as evidence becomes available.
+
 Notes on the commands above:
 
 - `learn drill` / `learn recall` auto-advance a `QUEUED` concept to

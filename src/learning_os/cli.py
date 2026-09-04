@@ -24,6 +24,7 @@ already provide the first two guarantees; every grading path used below
 from __future__ import annotations
 
 import sqlite3
+from datetime import date
 from pathlib import Path
 from typing import Optional
 
@@ -49,14 +50,17 @@ from learning_os.services.review_service import ReviewService
 from learning_os.services.seed_loader import seed_database
 from learning_os.services.session_service import SessionService
 from learning_os.services.syllabus_importer import ImportReport, import_syllabus
+from learning_os.services.curriculum_loader import CurriculumFormatError, load_curriculum
 
 app = typer.Typer(add_completion=False, no_args_is_help=True)
 output_app = typer.Typer(add_completion=False, no_args_is_help=True)
 focus_app = typer.Typer(add_completion=False, no_args_is_help=True)
 import_app = typer.Typer(add_completion=False, no_args_is_help=True)
+curriculum_app = typer.Typer(add_completion=False, no_args_is_help=True)
 app.add_typer(output_app, name="output")
 app.add_typer(focus_app, name="focus")
 app.add_typer(import_app, name="import")
+app.add_typer(curriculum_app, name="curriculum")
 
 
 @app.callback()
@@ -113,6 +117,83 @@ def init(ctx: typer.Context):
     conn = init_db(path)
     conn.close()
     typer.echo(f"Database ready at {path}")
+
+
+# ---------------------------------------------------------------------------
+# learn curriculum show [--week N] [--date YYYY-MM-DD]
+# ---------------------------------------------------------------------------
+
+@curriculum_app.command("show")
+def curriculum_show(
+    ctx: typer.Context,
+    week: Optional[int] = typer.Option(None, "--week", min=1, help="Show a specific curriculum week."),
+    as_of: Optional[str] = typer.Option(None, "--date", help="Use YYYY-MM-DD instead of today."),
+    manifest: str = typer.Option(
+        "content/core_curriculum.yaml", "--manifest",
+        help="Path to the active curriculum manifest.",
+    ),
+):
+    """Show the active week, or a selected week, from the core curriculum.
+
+    This command is intentionally read-only: it does not create concepts,
+    queue sources, change focus_state, or mark an output complete. Those
+    actions remain explicit through the existing learning commands.
+    """
+    try:
+        curriculum = load_curriculum(manifest)
+    except FileNotFoundError:
+        _fail(f"curriculum manifest not found: {manifest}")
+        return
+    except CurriculumFormatError as exc:
+        _fail(f"invalid curriculum manifest: {exc}")
+        return
+
+    if as_of is None:
+        try:
+            target_date = curriculum.today()
+        except CurriculumFormatError as exc:
+            _fail(f"invalid curriculum manifest: {exc}")
+            return
+    else:
+        try:
+            target_date = date.fromisoformat(as_of)
+        except ValueError:
+            _fail("--date must use YYYY-MM-DD")
+            return
+
+    week_number = week if week is not None else curriculum.week_for_date(target_date)
+    if week_number == 0:
+        typer.echo(
+            f"{curriculum.name} | not started as of {target_date.isoformat()} "
+            f"(starts {curriculum.start_date.isoformat()})"
+        )
+        return
+    if week_number > curriculum.duration_weeks:
+        typer.echo(
+            f"{curriculum.name} | complete as of {target_date.isoformat()} "
+            f"({curriculum.duration_weeks} weeks)"
+        )
+        return
+    try:
+        plan = curriculum.get_week(week_number)
+    except KeyError as exc:
+        _fail(str(exc))
+        return
+
+    typer.echo(
+        f"{curriculum.name} | week={plan.week}/{curriculum.duration_weeks} "
+        f"| as_of={target_date.isoformat()} | {curriculum.weekly_hours}h/week"
+    )
+    typer.echo(f"Question: {plan.question}")
+    typer.echo("Learning:")
+    for source in plan.learning:
+        scope = f" — {source.scope}" if source.scope else ""
+        typer.echo(f"  [{source.ref}] {source.title}{scope}")
+        if source.url:
+            typer.echo(f"    {source.url}")
+    typer.echo(f"Project: {plan.project}")
+    typer.echo(f"Decision reps: {plan.decision_reps}")
+    typer.echo(f"Output: {plan.output}")
 
 
 # ---------------------------------------------------------------------------

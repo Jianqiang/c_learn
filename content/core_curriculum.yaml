@@ -1,0 +1,244 @@
+curriculum:
+  slug: core-tech-change-to-position
+  name: "Core Curriculum: Tech Change → Position"
+  version: "2026-09-04"
+  start_date: "2026-08-31"
+  timezone: "Asia/Shanghai"
+  duration_weeks: 16
+  weekly_hours: "6-8"
+  north_star:
+    - "Tech Change"
+    - "Constraint"
+    - "Architecture"
+    - "Rent"
+    - "Capital Response"
+    - "FCF"
+    - "Expectations"
+    - "Position"
+  operating_principle: "课程服务 project，而不是 project 用来证明课程学完了。"
+  weekly:
+    - week: 1
+      question: "AI stack 上钱现在在哪里？"
+      learning:
+        - ref: mse435-1
+          title: "Stanford MS&E435 #1 — Economics of the AI Supercycle"
+          scope: "只回答 What changed? What is scarce? Who captures?"
+          url: "https://mse435.stanford.edu/materials.html"
+      project: "画当前 AI value-chain：chips → infra → models → apps。"
+      decision_reps: "记录一个 AI value-pool 判断及其可证伪条件。"
+      output: "AI Profit Pool Map v1"
+    - week: 2
+      question: "技术 bottleneck 如何创造 rent？"
+      learning:
+        - ref: mse435-2-3
+          title: "Stanford MS&E435 #2–3 + Baldwin bottlenecks"
+          scope: "围绕 chips、memory、energy、interconnect 与 compute demand 的约束。"
+          url: "https://mse435.stanford.edu/ai-compute-demand.html"
+      project: "在 GPU / HBM / network / power 中选一个，建立 Constraint → Rent map。"
+      decision_reps: "写出一个瓶颈放松或转移时的反向预测。"
+      output: "Constraint → Rent map"
+    - week: 3
+      question: "Innovation 为什么不等于 innovator 赚钱？"
+      learning:
+        - ref: teece-1986
+          title: "Teece 1986 — Profiting from Technological Innovation"
+          scope: "精读 appropriability regime、complementary assets、integration。"
+          url: "https://doi.org/10.1016/0048-7333%2886%2990027-2"
+        - ref: brandenburger-stuart-1996
+          title: "Brandenburger & Stuart — Value-Based Business Strategy"
+          scope: "理解 supplier / buyer / competitor asymmetry 与 firm added value。"
+          url: "https://onlinelibrary.wiley.com/doi/10.1111/j.1430-9134.1996.00005.x"
+      project: "比较 NVDA / hyperscaler / model vendor 的 value creation 与 value capture。"
+      decision_reps: "对一个 capture 假设标注证据等级与替代解释。"
+      output: "Value creation vs capture"
+    - week: 4
+      question: "Rent 为什么会迁移？"
+      learning:
+        - ref: jacobides-2006
+          title: "Jacobides, Knudsen & Augier — Benefiting from Innovation"
+          scope: "重点看 industry architecture、complementarity、mobility。"
+          url: "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1309509"
+        - ref: capital-returns
+          title: "Capital Returns — Edward Chancellor / Marathon"
+          scope: "前半部分选择性阅读，强制加入 capital response。"
+          url: "https://www.edwardchancellor.com/books/capital-returns"
+      project: "为 Week 2 bottleneck 加上 supply / capacity response。"
+      decision_reps: "预测 rent 迁移的领先指标。"
+      output: "Rent Migration Map"
+    - week: 5
+      question: "Industry thesis 怎么变成财务结果？"
+      learning:
+        - ref: accounting-bootloader
+          title: "Khan Academy Accounting；必要时 MIT 15.511"
+          scope: "cash vs accrual、三张表、折旧摊销、收入确认、应收账款。"
+          url: "https://www.khanacademy.org/science/core-finance/accounting-and-financial-stateme/financial-statements-tutorial"
+      project: "对两家熟悉的 tech 公司做 accounting autopsy。"
+      decision_reps: "指出一个 industry claim 如何进入或无法进入报表。"
+      output: "Financial anatomy sheet ×2"
+    - week: 6
+      question: "Growth 什么时候创造价值？"
+      learning:
+        - ref: nissim-penman
+          title: "Nissim & Penman — Ratio Analysis and Equity Valuation"
+          scope: "margin × turnover → profitability → growth → equity payoff。"
+          url: "https://business.columbia.edu/faculty/research/ratio-analysis-and-equity-valuation-research-practice"
+        - ref: mauboussin-roic
+          title: "Mauboussin & Callahan — ROIC and the Investment Process"
+          scope: "growth、incremental ROIC、reinvestment 与 value creation。"
+          url: "https://www.morganstanley.com/im/en-us/individual-investor/insights/articles/roic-and-the-investment-process.html"
+      project: "重构一家公司 ROIC / incremental ROIC / reinvestment。"
+      decision_reps: "写出 growth destroys value 的一个具体情形。"
+      output: "ROIC tree"
+    - week: 7
+      question: "Rent 如何进入 FCF？"
+      learning:
+        - ref: damodaran-valuation
+          title: "Damodaran Valuation Online #1, #2, #7–10"
+          scope: "重点是 cash flows、growth、terminal value、value enhancement。"
+          url: "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/webcastvalonline.htm"
+      project: "对 Weeks 2–4 的公司做 Bear / Base / Bull FCF。"
+      decision_reps: "为一个关键假设给出区间与更新触发器。"
+      output: "3-scenario FCF model"
+    - week: 8
+      question: "当前价格到底 price 了什么？"
+      learning:
+        - ref: expectations-investing
+          title: "Rappaport & Mauboussin — Expectations Investing"
+          scope: "完整阅读或按 price → implied expectations → expected revision 执行。"
+          url: "https://www.expectationsinvesting.com/"
+      project: "对同一公司做 reverse DCF / PIE。"
+      decision_reps: "明确 Reality、Consensus、Price 三者的差异。"
+      output: "Price-implied thesis"
+    - week: 9
+      question: "高利润为什么会被竞争消灭？"
+      learning:
+        - ref: mit-14271
+          title: "MIT 14.271 Industrial Organization L16–19"
+          scope: "重点是 entry 与 strategic investment；不做 problem sets，除非 case 卡住。"
+          url: "https://ocw.mit.edu/courses/14-271-industrial-organization-i-fall-2022/resources/lecture-videos/"
+        - ref: capital-returns-dynamics
+          title: "Capital Returns — 结合 capital cycle 部分"
+          scope: "按 case 需要补读。"
+          url: "https://www.edwardchancellor.com/books/capital-returns"
+      project: "建立 demand → entry → capacity → ROIC 动态模型。"
+      decision_reps: "预测竞争反应，而不是只外推需求增长。"
+      output: "Capital-response case"
+    - week: 10
+      question: "Firm / organization 如何影响 AI capture？"
+      learning:
+        - ref: nber-ch7-ch12
+          title: "NBER Economics of Transformative AI — Ch.7 + Ch.12"
+          scope: "firm adaptation、investment、organization、tacit knowledge、decision rights。"
+          url: "https://www.nber.org/books-and-chapters/economics-transformative-ai/transformative-ai-and-firms"
+      project: "比较两家 AI-adopting firms 的 organizational complementarity。"
+      decision_reps: "写出一个 capability → rent 的中间机制。"
+      output: "Capability → Rent case"
+    - week: 11
+      question: "AI 会怎样改变产业边界？"
+      learning:
+        - ref: nber-ch4-ch6
+          title: "NBER Economics of Transformative AI — Ch.4 + Ch.6"
+          scope: "upstream market power、downstream competition、agents、transaction costs、market design。"
+          url: "https://www.nber.org/books-and-chapters/economics-transformative-ai"
+        - ref: mse435-8
+          title: "Stanford MS&E435 #8 / Vercel"
+          scope: "按 AI software / agent case 需要使用。"
+          url: "https://mse435.stanford.edu/materials.html"
+      project: "做一个 agent / software market architecture case。"
+      decision_reps: "列出边界变化的赢家、输家和不确定项。"
+      output: "Industry Architecture v2"
+    - week: 12
+      question: "技术 change 有哪些重复历史模式？"
+      learning:
+        - ref: historical-patterns
+          title: "无新增主课；由 AI 辅助搜集历史资料"
+          scope: "PC / Internet / Cloud / Smartphone / Solar 中选三个。"
+      project: "把三个历史案例压缩成可复用的 pattern library。"
+      decision_reps: "记录一个历史类比失效的条件。"
+      output: "Historical pattern library"
+    - week: 13
+      question: "我的判断到底准不准？"
+      learning:
+        - ref: superforecasting
+          title: "Tetlock & Gardner — Superforecasting"
+          scope: "完整快速阅读：prior、base rate、probability、evidence、update。"
+          url: "https://goodjudgment.com/resources/"
+        - ref: good-judgment-open
+          title: "Good Judgment Open"
+          scope: "不大量预测政治问题，把方法迁移到 Investment Forecast Ledger。"
+          url: "https://goodjudgment.com/2025-ufc-winners/"
+      project: "建立 15–20 个可结算投资预测。"
+      decision_reps: "每条预测保存概率、截止日、基准率和更新事件。"
+      output: "Forecast Ledger"
+    - week: 14
+      question: "什么是 second-level thinking？"
+      learning:
+        - ref: howard-marks
+          title: "Howard Marks — The Most Important Thing Illuminated"
+          scope: "Ch.1、4–7、10、14、16、19。"
+          url: "https://cup.columbia.edu/book/the-most-important-thing-illuminated/9780231162845/"
+      project: "给现有持仓写 Reality / Consensus / Price 三栏。"
+      decision_reps: "为 variant perception 写出反证条件。"
+      output: "Variant Perception Sheet"
+    - week: 15
+      question: "Edge 应该下多少资本？"
+      learning:
+        - ref: sizing
+          title: "Probability / Kelly intuition / correlation"
+          scope: "只补足当前 position sizing 所需的概率与相关性直觉。"
+      project: "对 3–5 个真实 position 重做 sizing。"
+      decision_reps: "记录 edge、downside、correlation、size 与可撤销条件。"
+      output: "Position Decision Tape"
+    - week: 16
+      question: "整套系统能否产生 alpha？"
+      learning:
+        - ref: capstone
+          title: "无新材料"
+          scope: "停止扩展课程，完整承保一个当前 tech-change opportunity。"
+      project: "完成一个当前 tech-change opportunity 的完整 underwriting。"
+      decision_reps: "写 postmortem template，区分 thesis、forecast、outcome、attribution。"
+      output: "Investment Memo + postmortem template"
+  longitudinal_projects:
+    - slug: ai-infra
+      name: "AI Infra"
+      scope: "GPU / networking / HBM / power / data center 中选一条。"
+      final_goal: "Constraint → capital cycle → FCF"
+    - slug: ai-software
+      name: "AI Software"
+      scope: "coding / enterprise AI / agents 中选一个。"
+      final_goal: "Capability → architecture → capture"
+    - slug: live-position
+      name: "Live Position"
+      scope: "选一个真实持仓或候选。"
+      final_goal: "FCF → expectations → position"
+  minimum_reading:
+    books:
+      - "Expectations Investing — Rappaport & Mauboussin"
+      - "Capital Returns — Edward Chancellor / Marathon"
+      - "Financial Statement Analysis and Security Valuation — Stephen Penman（选择性）"
+      - "Superforecasting — Tetlock & Gardner"
+      - "The Most Important Thing Illuminated — Howard Marks（选择性）"
+    papers:
+      - "Teece — Profiting from Technological Innovation"
+      - "Brandenburger & Stuart — Value-Based Business Strategy"
+      - "Jacobides et al. — Benefiting from Innovation"
+      - "Baldwin — Bottlenecks, Modules and Dynamic Architectural Capabilities"
+      - "Nissim & Penman — Ratio Analysis and Equity Valuation"
+      - "NBER — Transformative AI and Firms + AI’s Use of Knowledge in Society"
+    video_sets:
+      - "MS&E435 #1–5 + #8"
+      - "Damodaran Valuation #1, #2, #7–10"
+      - "MIT 14.271 L16–19（其余按需）"
+  graduation_outputs:
+    - "Tech Change → Rent mechanism library"
+    - "Accounting / FCF reflex"
+    - "Price-implied expectations method"
+    - "20+ scored forecasts"
+    - "Position decision tape"
+    - "Three iterated real investment cases"
+  after_curriculum:
+    allocation:
+      real_investment_cases: "70%"
+      just_in_time_theory: "20%"
+      frontier_learning: "10%"
+    rule: "不要让学习投资取代训练投资。"
