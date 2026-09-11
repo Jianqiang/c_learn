@@ -1,0 +1,416 @@
+# Deliberate Practice Bootcamp v3 — "Build the Map" (knowledge-first) → Phase B "Build the Skill" (live investing)
+#
+# 8 module（M0-M7），知识优先：每个 module = 材料 + 一个轻量 micro exercise/quiz。
+# 不设逐 module 闭卷出口或强制预测配额——那些检验挪到 Phase A 结束后的 Phase B（真实候选 underwriting）。
+
+bootcamp:
+  slug: deliberate-practice-bootcamp-v3
+  name: "Deliberate Practice Bootcamp v3: Build the Map → Build the Skill"
+  version: "2026-09-11-v3"
+  mode: module
+  start_date: "2026-09-07"
+  timezone: "Asia/Shanghai"
+  daily_hours: 5
+  total_budget_hours: 80
+
+  core_loop:
+    - Theory
+    - Retrieval
+    - Micro-exercise
+
+  final_chain:
+    - Technology Change
+    - Architecture
+    - Rent
+    - Capital Response
+    - Financials
+    - Capital Allocation
+    - Expectations
+    - Consensus/Catalyst
+    - Position
+
+  design_principles:
+    - id: p1
+      name: "AI 永远晚于你的第一次 attempt"
+      rule: "Human prior → AI evidence → Human update。micro exercise 提交前不给结论、不给 thesis。"
+    - id: p2
+      name: "75-80% Knowledge + 20-25% Retrieval/Quiz/Micro Exercise"
+      rule: "module 内自行把握比例，不脚本强制。"
+    - id: p3
+      name: "Phase A 不设闭卷出口，检验留给 Phase B"
+      rule: "真正的下注/迁移检验在 Phase B：真实候选的完整 underwriting 与 live position 决策。"
+    - id: p4
+      name: "终点是 skill diagnosis"
+      rule: "Phase A 产出知识地图；Phase B 才回答「我已 proceduralize 什么 / 哪里仍依赖 AI」。"
+
+  gates:
+    - id: g1
+      name: "材料占比参考线"
+      rule: "材料消化时间宜 ≤ module 总时间 50%，owner 自行把握，不脚本强制拦截。"
+    - id: g3
+      name: "Phase A 毕业 ≥10 条可结算预测"
+      rule: "集中在 M7 产出，须通过 forecast linter（指标/阈值/时间窗/resolution source 齐全）。"
+
+  trainers:
+    primary:
+      slug: ai-rent-universe
+      name: "AI rent universe"
+      role: "主应用场 —— owner 有 edge，且通向真实下注"
+      members:
+        - {ticker: "AVGO", note: "upstream CS 教科书案例"}
+        - {ticker: "NVDA", note: "specialized + category-level CS"}
+        - {ticker: "PLTR", note: "downstream CS，rent 已 consensus"}
+        - {ticker: "NOW", note: "workflow CS，rent 已 consensus"}
+        - {ticker: "CRM", note: "★ 最高研究价值：defensive feature vs 新 rent layer 未决"}
+        - {ticker: "INTC", note: "custom silicon / packaging CS option"}
+        - {ticker: "600588.SH", note: "用友：substrate → CS transition，architecture 已证 / rent 未证"}
+        - {ticker: "600570.SH", note: "恒生：极强 specialized substrate，AI-CS 尚早"}
+      unlisted_references:
+        - "飞书（字节，未上市）—— 中国最强 work-state CS seed"
+        - "WorkBuddy（腾讯）—— neutral harness，CS potential 在企业 state 侧"
+    live_position:
+      slug: tencent
+      ticker: "0700.HK"
+      name: "腾讯控股"
+      role: "live position —— 同时是 AI rent universe 成员，深度案例"
+      chain: "monetization → FCF → expectations → sizing"
+      primary_source: "https://www.tencent.com/investors/financial-reports/"
+    deferred:
+      - slug: snps
+        ticker: "SNPS"
+        name: "Synopsys"
+        role: "M2 锚点对象。清 SNPS GAAP OPM 13.0% vs non-GAAP 41.6% 的 28.6pt 差异。"
+        primary_source: "https://investor.synopsys.com/financials/sec-filings/default.aspx"
+        note: "本地已有 memo（08_SNPS_Synopsys）—— 闭卷完成前不得打开"
+
+  local_resources:
+    root: "/Users/jma/PycharmProjects/fin/co_investor"
+    cninfo_announcements:
+      path: "output/research_os/official_announcements/cninfo/"
+      coverage: "48 只 A 股已抓取公告"
+      usage: "M2/M4 需要具体报表数字时可用"
+    existing_memos:
+      path: "output/chatgpt_cases_archive/"
+      count: 17
+      covers: "锐捷网络 通富微电 安集科技 联瑞新材 上海新阳 华海诚科 天承科技 SNPS 腾讯 古茗 比亚迪 CRM NOW 三环集团 盛美上海 麦格米特 江丰电子"
+      pit_usage_rule: >
+        这 17 份 memo 是带时间戳的历史判断。用法必须是：先闭卷写出当前判断 → 再打开当时的 memo →
+        对比「我当时怎么想 / 现在怎么想 / 什么证据让我改变」。顺序反了就退化成抄旧结论。
+      affects_bootcamp:
+        - "SNPS：M2 锚点，reconcile 前不得参考"
+        - "CRM / NOW / 腾讯：M5 做 reverse DCF 前必须先闭卷，再对照 memo 做 PIT 比较"
+
+  modules:
+    - id: M0
+      name: "Technology Change → Architecture → Rent"
+      question: "Constraint 如何变成 Architecture，Architecture 为什么决定谁 capture value？"
+      status: in_progress
+      est_hours: "20-21"
+      chain: "Constraint → Interdependency → Architecture → Bottleneck → Value Capture"
+      materials:
+        - ref: teece-1986
+          title: "Teece — Profiting from Technological Innovation"
+          status: done
+          actual_hours: "3-4"
+          url: "https://www.sciencedirect.com/science/article/pii/0048733386900272"
+        - ref: brandenburger-stuart-1996
+          title: "Brandenburger & Stuart — Value-Based Business Strategy"
+          status: done
+          url: "https://business.columbia.edu/faculty/research/value-based-business-strategy"
+        - ref: baldwin-bottlenecks
+          title: "Baldwin — Bottlenecks, Modules and Dynamic Architectural Capabilities"
+          status: done
+          scope: "technical bottleneck / strategic bottleneck / modular interface / control point"
+          url: "https://www.hbs.edu/ris/download.aspx?name=15-028.pdf"
+        - ref: jacobides-2006
+          title: "Jacobides, Knudsen & Augier — Benefiting from Innovation"
+          status: pending
+          est_hours: "2-3"
+          scope: "industry architecture 如何决定 appropriation"
+          url: "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1309509"
+        - ref: henderson-clark-1990
+          title: "Henderson & Clark 1990 — Architectural Innovation"
+          status: pending
+          est_hours: "2-2.5"
+          priority: next
+          scope: >
+            补最大的推理缺口：从「这里有 bottleneck」跳到「所以这里 capture value」，
+            缺少「architecture 为什么变、bottleneck 能维持多久」。
+          url: "https://doi.org/10.2307/2393549"
+          open_copy: "http://dspace.mit.edu/bitstream/handle/1721.1/48004/generationalinno00hend.pdf?sequence=1"
+          applies_to: "教学顺序：IBM PC Guided Lab Round 1 → 本篇 → 回看 IBM PC。不要提前读，会污染独立判断。"
+      jit_pool:
+        rule: "触发条件出现才读，读完只写进当次 case 的 model update，不产出读书笔记。"
+        items:
+          - ref: jacobides-winter-2005
+            title: "Jacobides & Winter 2005 — Co-evolution of Capabilities and Transaction Costs"
+            trigger: "判断 firm boundary 变化（纵向专业化/解体）时"
+          - ref: colfer-baldwin-2016
+            title: "Colfer & Baldwin 2016 — The Mirroring Hypothesis"
+            trigger: "IBM PC / NVIDIA case 里 technical architecture 与 organizational architecture 不一致时"
+          - ref: adner-kapoor-2010
+            title: "Adner & Kapoor 2010 — Value Creation in Innovation Ecosystems"
+            trigger: "量化 upstream component 与 downstream complement 的不对称影响时"
+          - ref: cohen-levinthal-1990
+            title: "Cohen & Levinthal 1990 — Absorptive Capacity"
+            trigger: "判断企业客户能否真正吸收 AI（capability ≠ adoption）时"
+      done_so_far:
+        - "Teece 三概念（appropriability regime / dominant design / complementary assets）"
+        - "五关框架：Asset Specificity → Bilateral Dependence → Redeployability → Bargaining Power → Observed Rent"
+        - "10 家公司 Teece 判断地图（outputs/day02/04_memo_teece_ai_rent.md）"
+        - "IBM PC Guided Lab 01 brief 已落地（outputs/m1/lab01_ibm_pc/00_brief_and_round1.md），Round 1 未提交"
+      remaining:
+        - "★ IBM PC Guided Lab 01 Round 1：在 1981 信息集里跑 bottleneck → interface → control point → 可结算预测（owner 先做，AI 不得剧透后续结果）"
+        - "★ 读 Henderson & Clark（Round 1 提交之后）"
+        - "读 Jacobides 2006"
+        - "20-45 分钟 micro exercise：陌生系统中区分 component change / architectural change / complement / bottleneck / control / bargaining rent"
+      exit_criteria:
+        - "闭卷画出任一给定公司的 Innovation → Asset Specificity → Bilateral Dependence → Bargaining Power → Observed Rent"
+        - "能区分 component innovation 与 architectural innovation，并说明后者为何让在位者失效"
+        - "能回答「这个 bottleneck 能维持多久」，给出 modularization / standardization / integration 三条侵蚀路径"
+      ai_usage:
+        mode: "independent divergence + fact extraction，Round 1 提交前不给结论"
+        allowed: "事实三栏提取；Round 1 提交后做 reconciler（只报概念混淆，不报历史结果）"
+        forbidden: "剧透 IBM PC 后续结果；在 owner 提交前给出 control point 结论"
+
+    - id: M1
+      name: "Financial Accounting"
+      question: "会计怎样把商业事实变成三张表？"
+      status: pending
+      est_hours: "6-7"
+      materials:
+        - ref: damodaran-accounting
+          title: "Damodaran — Accounting Online Class（全套）"
+          status: pending
+          est_hours: "5-6"
+          scope: "三张表 / income statement / balance sheet / cash flows / SBC·R&D·leases 等 accounting inconsistencies / ratios，附 post-class tests"
+          url: "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/webcastacctg.htm"
+        - ref: mit-15511-patch
+          title: "MIT Sloan 15.511 Financial Accounting（rigor patch，选读）"
+          status: pending
+          est_hours: "1"
+          scope: "只打开 Damodaran 没充分展开的：Revenue Recognition / Inventory-COGS / Long-lived Assets-Depreciation / Statement of Cash Flows"
+          url: "https://ocw.mit.edu/courses/15-511-financial-accounting-summer-2004/"
+      remaining:
+        - "Damodaran Accounting Online Class 全套 + post-class tests"
+        - "MIT 15.511 selective notes（按 Damodaran 未覆盖的缺口挑）"
+      exit_criteria:
+        - "能闭卷说出一笔常见交易（收入确认/资本化/SBC）如何同时影响三张表"
+      ai_usage:
+        mode: "material digest + retrieval quiz"
+        allowed: "对材料做要点摘要、出闭卷回忆题"
+        forbidden: "替 owner 完成 post-class tests"
+
+    - id: M2
+      name: "Financial Statement → Business Economics → FCF"
+      question: "会计事实如何变成 forecast 与 valuation？"
+      status: pending
+      est_hours: "9-10"
+      materials:
+        - ref: penman-fsa
+          title: "Penman — Financial Statement Analysis and Security Valuation（选读）"
+          status: pending
+          est_hours: "5-6"
+          scope: "viewing the business through financial statements / profitability analysis / growth·sustainable earnings / forecasting / accounting quality"
+          url: "https://business.columbia.edu/faculty/research/financial-statement-analysis-and-security-valuation"
+        - ref: mauboussin-roic
+          title: "Mauboussin & Callahan — ROIC and the Investment Process"
+          status: pending
+          est_hours: "1"
+          scope: "Growth × Incremental ROIC × Reinvestment → Value"
+          url: "https://www.morganstanley.com/im/en-us/individual-investor/insights/consilient-observer/roic-and-the-investment-process.html"
+        - ref: damodaran-valuation
+          title: "Damodaran — Valuation Online Class（选段）"
+          status: pending
+          est_hours: "1.5-2"
+          scope: "Introduction/Intrinsic Value, Cash Flows, Growth, Terminal Value, Value Enhancement"
+          url: "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/webcastvalonline.htm"
+      anchor_tasks:
+        - "拿一家熟悉公司，画 Revenue → NOPAT → Invested Capital → Incremental ROIC → Reinvestment → FCF（不搭大模型，45min）"
+      remaining:
+        - "Penman 选读五个主题"
+        - "Mauboussin & Callahan ROIC"
+        - "Damodaran Valuation 选段"
+        - "45min micro exercise"
+      exit_criteria:
+        - "能闭卷画出 Revenue → FCF 的完整链条并标出每一步的驱动因子"
+      ai_usage:
+        mode: "material digest + retrieval quiz"
+        allowed: "提取原始报表数据；对材料做要点摘要"
+        forbidden: "替 owner 完成 ROIC 拆解练习"
+
+    - id: M3
+      name: "Management & Capital Allocation"
+      question: "FCF 赚到手之后，管理层怎样把它再配置成未来的 per-share value？"
+      status: pending
+      est_hours: "2-2.5"
+      materials:
+        - ref: mauboussin-capital-allocation
+          title: "Mauboussin & Callahan — Capital Allocation: Results, Analysis, and Assessment（2025 更新版）"
+          status: pending
+          est_hours: "1.5-2"
+          scope: "capex / R&D / M&A / divestitures / dividends / buybacks / capital structure / incentives / 评价管理层 capital-allocation skill；核心目标 maximize long-term value per share，而非 maximize EPS"
+          url: "https://www.morganstanley.com/im/publication/insights/articles/article_capitalallocation.pdf"
+      anchor_tasks:
+        - "找一个熟悉公司：过去五年 FCF 的 100 元到底去了哪里？再问 incremental dollar 最应该去哪里（30min）"
+      exit_criteria:
+        - "能闭卷说出六类资本配置去向（capex/R&D/M&A/divestiture/dividend/buyback）并各自的价值创造条件"
+      ai_usage:
+        mode: "material digest + retrieval quiz"
+        allowed: "提取材料要点"
+        forbidden: "替 owner 判断某公司的 capital allocation 质量"
+
+    - id: M4
+      name: "Industry Capital Cycle & Supply Response"
+      question: "全行业的资本配置怎样毁掉或延长 rent？"
+      status: pending
+      est_hours: "8-10"
+      trainer_note: "与 M0-M3 的公司层视角互补：这里回答供给侧如何回应高 ROIC。"
+      materials:
+        - ref: capital-returns
+          title: "Chancellor (ed.) / Marathon Asset Management — Capital Returns"
+          status: pending
+          est_hours: "6-8"
+          scope: "Demand↑ → Scarcity → ROIC↑ → Capex↑ → Capacity↑ → Competition↑ → ROIC↓，建议基本读完"
+          url: "https://www.edwardchancellor.com/books/capital-returns"
+        - ref: mit-15772j
+          title: "MIT 15.772J D-Lab: Supply Chains（选读）"
+          status: pending
+          est_hours: "1.5-2"
+          scope: "只学物理 supply response 的语言：demand forecasting / capacity planning / process analysis / inventory / supply coordination"
+          url: "https://ocw.mit.edu/courses/15-772j-d-lab-supply-chains-fall-2014/"
+      remaining:
+        - "Capital Returns 精读"
+        - "MIT D-Lab Supply Chains 选读"
+        - "回到 AI universe：算力 capex 的 supply response 会在何时压缩 rent？"
+      exit_criteria:
+        - "能预测竞争与资本反应，而非只外推需求"
+      ai_usage:
+        mode: "material digest + retrieval quiz"
+        allowed: "提取材料要点"
+        forbidden: "替 owner 划 supply cycle 的 regime"
+
+    - id: M5
+      name: "Price → Expectations → Alpha"
+      question: "当前价格要求什么必须为真？"
+      status: pending
+      est_hours: "9-11"
+      priority: highest
+      rationale: "全 bootcamp 最高优先级投资书；owner 已有的 PLTR/CRM/腾讯判断需要用这里的方法量化"
+      materials:
+        - ref: expectations-investing
+          title: "Rappaport & Mauboussin — Expectations Investing（Ch.1-7）"
+          status: pending
+          est_hours: "6-8"
+          scope: "Price → Price-Implied Expectations → Expectation Revision → Decision"
+          url: "https://www.expectationsinvesting.com/"
+        - ref: expectations-tutorials
+          title: "Expectations Investing — Tutorials 2-8"
+          status: pending
+          est_hours: "3"
+          scope: "sales / margins / working capital / fixed capital / cash taxes / cost of capital / price-implied expectations"
+          url: "https://www.expectationsinvesting.com/tutorials"
+      anchor_tasks:
+        - "PLTR：反解当前价格隐含的 revenue growth / margin / duration，与已有 memo 的「rent 已 consensus」判断对照"
+        - "CRM：反解 Agentforce 若为 defensive vs 新 rent layer 两种情形的隐含价格差"
+        - "腾讯：AI capability → Product KPI → advertiser economics → FCF → value，写 Reality/Consensus/Price 三栏"
+      exit_criteria:
+        - "「贵不贵」被「价格要求什么必须为真」替代"
+        - "能把「市场已 price in」量化为隐含增长/利润率/duration"
+      ai_usage:
+        mode: "solver, not valuator"
+        allowed: "写 reverse DCF solver，暴露哪个变量最敏感；保存带时间戳 consensus snapshot"
+        forbidden: "给「合理估值」或目标价；事后修改 snapshot"
+
+    - id: M6
+      name: "Professional Equity Research OS"
+      question: "专业研究流程如何把证据变成可结算的 stock call？"
+      status: pending
+      est_hours: "7-9"
+      rationale_check: >
+        owner 已有自建研究 pipeline（PITDataService / wiki-ingest / bounded_evidence_pass /
+        audit_forecast_decision）。读之前先明确 Valentine 这本书具体补哪个缺口，
+        不要泛泛"值得学"——不要为了 completeness 而读。
+      materials:
+        - ref: valentine-research
+          title: "Valentine — Best Practices for Equity Research Analysts（选读 Ch.7-10, 17-20）"
+          status: pending
+          est_hours: "5-7"
+          scope: "Evidence side：critical factors / proprietary research / interviewing；Decision side：financial models / scenario forecasts / valuation / stock calls"
+          url: "https://www.cfainstitute.org/sites/default/files/-/media/documents/support/research-challenge/challenge/best-practices-equity-sample.pdf"
+        - ref: damodaran-invphil
+          title: "Damodaran — Investment Philosophies Webcasts #22-26"
+          status: pending
+          est_hours: "1.25"
+          scope: "information trading / analysts / earnings-estimate revisions / earnings surprise / information diffusion"
+          url: "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/webcastinvphil2025.htm"
+        - ref: compliance-primer
+          title: "Compliance primer：CFA Mosaic Theory + SEC Regulation FD basics"
+          status: pending
+          est_hours: "0.75"
+          scope: "primary / expert / channel research 的边界，不是学证券法"
+      exit_criteria:
+        - "能说出自己当前 pipeline 里对应 Valentine 框架的哪一层缺失或已覆盖"
+      ai_usage:
+        mode: "material digest + gap mapping"
+        allowed: "把材料框架与 owner 已有 pipeline 逐项对照，标出重叠与缺口"
+        forbidden: "替 owner 判断该不该读完整本书"
+
+    - id: M7
+      name: "Forecasting → Portfolio Decision"
+      question: "不确定性如何变成概率、赔率与仓位？"
+      status: pending
+      est_hours: "6-7"
+      materials:
+        - ref: superforecasting
+          title: "Tetlock & Gardner — Superforecasting（快速/选择性读）"
+          status: pending
+          est_hours: "4-5"
+          scope: "decomposition / base rates / probabilities / Bayesian updating / calibration / scorekeeping"
+          url: "https://www.penguinrandomhouse.com/books/227815/superforecasting-by-philip-e-tetlock-and-dan-gardner/"
+        - ref: cfa-portfolio-construction
+          title: "CFA Institute — Active Equity Investing: Portfolio Construction（选读 summary/sizing/risk-budgeting）"
+          status: pending
+          est_hours: "1-1.5"
+          scope: "security analysis 识别标的 vs portfolio construction 决定权重；sizing / concentration / correlation / liquidity / risk budget / factor overlap"
+          url: "https://www.cfainstitute.org/insights/professional-learning/refresher-readings/2026/active-equity-investing-portfolio-construction"
+      anchor_tasks:
+        - "写 10 个可结算概率预测（Phase A 毕业产出）"
+      exit_criteria:
+        - "10 条预测全部通过 forecast linter（指标/阈值/时间窗/resolution source 齐全）"
+      ai_usage:
+        mode: "forecast linter"
+        allowed: "拒绝不可结算的预测"
+        forbidden: "评价预测内容或概率高低"
+      safety: "只记录 decision tape，不下单、不改变实际仓位"
+
+  second_wave:
+    display_name: "Phase B — Build the Skill"
+    trigger: "M0-M7 全部读完"
+    est_hours: "open-ended（80/20 分配，非固定时长）"
+    allocation:
+      real_investment_cases: "80%"
+      just_in_time_theory: "20%"
+    content: "1-2 个真实候选的完整 underwriting。这里是闭卷出口 + transfer test + 可结算预测真正被检验的地方。"
+    candidates_note: "CRM 与腾讯为当前最高优先（前者 rent 性质未决，后者是 live position）；SNPS 可作第三"
+    deliverables:
+      - "Investment Memo（3-5 页）"
+      - "一个 model"
+      - "5 个 load-bearing assumptions"
+      - "5 个可结算 forecasts"
+      - "3 个 kill conditions"
+      - "明确 position decision + monitoring plan"
+      - "postmortem template"
+
+  artifact_policy:
+    save:
+      - "Model update"
+      - "Research questions"
+      - "Decision / forecast"
+    never_save:
+      - "课程摘要"
+
+  graduation_outputs:
+    - "Phase A：知识地图 + Forecast Ledger（10 条可结算）"
+    - "Phase B：Skill diagnosis（已 proceduralize 什么 / 哪一步仍依赖 AI / 哪类错误最频繁）"
+    - "Position decision tape"

@@ -1,0 +1,648 @@
+# Deliberate-practice bootcamp manifest. This is orchestration metadata, NOT a
+# content database. Concepts/items/review state stay in SQLite. A bootcamp day
+# is never a "mastered concept" and never auto-enters the review queue.
+
+bootcamp:
+  slug: deliberate-practice-bootcamp-20d
+  name: "Deliberate Practice Bootcamp: Company → Position"
+  version: "2026-09-07"
+  start_date: "2026-09-07"
+  timezone: "Asia/Shanghai"
+  duration_days: 20
+  daily_hours: 6
+  schedule: weekdays
+
+  core_loop:
+    - Theory
+    - Attempt
+    - Evidence
+    - Transfer
+    - Decision
+
+  final_chain:
+    - Company
+    - Economics
+    - Financials
+    - Expectations
+    - Probability
+    - Position
+
+  production_function:
+    - Observe
+    - Understand
+    - Model
+    - Price
+    - Bet
+    - Score
+    - Learn
+
+  design_principles:
+    - id: p1
+      name: "AI 永远晚于你的第一次 attempt"
+      rule: "Human prior → AI evidence → Human update。除 orientation / fact extraction 外，禁止 AI memo → 你点评。"
+    - id: p2
+      name: "每个概念跨公司迁移"
+      rule: "同一能力至少跨两家公司迁移一次；否则学到的是 case knowledge，不是 investing skill。"
+    - id: p3
+      name: "每周五闭卷考试"
+      rule: "Closed book + time limit + novel/perturbed problem。不是复习，是检验能力是否已形成。"
+    - id: p4
+      name: "终点是 skill diagnosis"
+      rule: "Day 20 的产物不是三篇研究报告，而是：我已 proceduralize 什么 / 哪一步仍依赖 AI / 哪类错误最频繁。"
+
+  daily_blocks:
+    - order: 1
+      slug: market-contact
+      name: "AI Market Contact"
+      minutes: 20
+      content: "overnight delta / anomalies / thesis exceptions"
+    - order: 2
+      slug: theory-recall
+      name: "Theory + closed-book recall"
+      minutes: 70
+      content: "前 10 分钟闭卷写；后 60 分钟学习"
+    - order: 3
+      slug: primary-practice
+      name: "Primary deliberate practice"
+      minutes: 140
+      content: "当天主要公司，自己做核心推理"
+    - order: 4
+      slug: transfer
+      name: "Cross-case transfer"
+      minutes: 60
+      content: "同一方法迁移到第二家公司"
+    - order: 5
+      slug: decision-rep
+      name: "Expectations / decision rep"
+      minutes: 40
+      content: "Reality → Consensus → Price → Action"
+    - order: 6
+      slug: synthesis
+      name: "Synthesis + AI delegation"
+      minutes: 30
+      content: "更新 question queue，给 agent 布置次日证据任务"
+
+  artifact_policy:
+    save:
+      - "Model update"
+      - "Research questions"
+      - "Decision / forecast"
+    never_save:
+      - "课程摘要"
+
+  projects:
+    - slug: snps
+      ticker: "SNPS"
+      name: "Synopsys"
+      role: "主 underwriting case"
+      chain: "技术 → architecture → moat → duration → expectations"
+      primary_source: "https://investor.synopsys.com/financials/sec-filings/default.aspx"
+    - slug: tencent
+      ticker: "0700.HK"
+      name: "腾讯控股"
+      role: "live-position case"
+      chain: "monetization → FCF → expectations → sizing"
+      primary_source: "https://www.tencent.com/investors/financial-reports/"
+    - slug: csscdf
+      ticker: "600685.SH"
+      name: "中船防务"
+      role: "cycle laboratory"
+      chain: "订单 → 产能 → 交付 → 利润 → 现金 → cycle timing"
+      primary_source: "https://www.sse.com.cn/disclosure/listedinfo/periodic/index.shtml"
+
+  weeks:
+    - week: 1
+      name: "Economics"
+      subtitle: "从「懂公司」到「知道该问什么」"
+      goal: "Weak prior → Economic map → Fragile links → Good questions"
+      threshold: "给一家陌生公司 10-K/年报和两小时，你能画出价值链、盈利引擎、rent source、主要反作用力，并提出 10 个真正 load-bearing 的研究问题。"
+    - week: 2
+      name: "Financial Translation"
+      subtitle: "把产业判断变成钱（训练权重最高的一周）"
+      goal: "Economic mechanism → Accounting → ROIC → FCF"
+      threshold: "听到一个产业变化，你能迅速说清它首先打到哪个 operating driver、哪个财务项目、什么时候进现金流。"
+    - week: 3
+      name: "Expectations"
+      subtitle: "好公司什么时候不是好股票"
+      goal: "Fundamentals ≠ Consensus ≠ Price"
+      threshold: "「估值贵不贵」被「当前价格要求什么必须为真？」取代。"
+    - week: 4
+      name: "Judgment"
+      subtitle: "概率、反证与资本"
+      goal: "Uncertainty → Probability → Payoff → Position"
+      threshold: "能独立跑完 Company → Economics → Financials → Expectations → Probability → Position 全链。"
+
+  days:
+    - day: 1
+      week: 1
+      date: "2026-09-07"
+      title: "Business anatomy / orientation"
+      theory:
+        - ref: mse435-w1w2
+          title: "Stanford MS&E 435 — Economics of the AI Supercycle"
+          scope: "Week 1–2 materials；围绕 AI stack 的 profit pools 建 mental model。"
+          url: "https://mse435.stanford.edu/materials.html"
+      closed_book_prompt: "我目前认为 SNPS 怎么赚钱？"
+      primary:
+        project: snps
+        task: "闭卷先写盈利机制；然后才看 10-K、segment/product structure、customer/workflow、Ansys 后公司结构、competitors。画 Customer problem → Product → Revenue → Cost → Value。"
+      transfer:
+        project: tencent
+        minutes: "30-60"
+        task: "重画腾讯 economic engine。禁止按财报 segment 照抄，必须按 economic engine 分。"
+      outputs:
+        - "SNPS Company Map v0"
+        - "Tencent Company Map v0"
+        - "我目前不知道的 20 件事"
+      ai_usage:
+        mode: "orientation pack"
+        allowed: "事实、时间轴、业务结构、术语表、primary-source links、争议事实"
+        forbidden: "thesis、recommendation、估值判断"
+        special: "必须把内容分三栏：事实 / management claim / analyst inference。这样 AI 给 prior，但不提前污染判断。"
+
+    - day: 2
+      week: 1
+      date: "2026-09-08"
+      title: "Value creation ≠ value capture"
+      theory:
+        - ref: teece-1986
+          title: "Teece — Profiting from Technological Innovation"
+          scope: "appropriability regime 与 complementary assets。"
+          url: "https://www.sciencedirect.com/science/article/pii/0048733386900272"
+        - ref: brandenburger-stuart-1996
+          title: "Brandenburger & Stuart — Value-Based Business Strategy"
+          scope: "added value 与 capture upper bound。"
+          url: "https://business.columbia.edu/faculty/research/value-based-business-strategy"
+      closed_book_prompt: "客户为什么不能把 SNPS 拿掉？"
+      primary:
+        project: snps
+        task: "分别检验 technology / switching cost / workflow / IP / ecosystem / complementary assets / co-development / customer risk aversion。不要统称「moat」。"
+      transfer:
+        project: csscdf
+        task: "船东创造的价值、船厂创造的价值、船机/设备商创造的价值分别是什么？"
+      outputs:
+        - "Value Creation → Capture Map ×2"
+      ai_usage:
+        mode: "counterfactual removal test"
+        allowed: "反事实推演：假设 SNPS 明天消失，客户如何重构 workflow？哪些价值转移给 Cadence / 内部设计团队 / foundry / IP provider？"
+        forbidden: "直接列 moat 清单"
+        special: "counterfactual removal 比「列 moat」更容易发现真正 added value。"
+
+    - day: 3
+      week: 1
+      date: "2026-09-09"
+      title: "Bottleneck / industry architecture"
+      theory:
+        - ref: baldwin-bottlenecks
+          title: "Baldwin — Bottlenecks, Modules and Dynamic Architectural Capabilities"
+          scope: "technical bottleneck、industry architecture 与 value capture 的连接。"
+          url: "https://www.hbs.edu/ris/download.aspx?name=15-028.pdf"
+        - ref: jacobides-2006
+          title: "Jacobides, Knudsen & Augier — Benefiting from Innovation"
+          scope: "industry architecture 决定 value appropriation。"
+          url: "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1309509"
+        - ref: nber-ch7
+          title: "Chatterji, Rock & Talamàs — Transformative AI and Firms（腾讯 JIT）"
+          scope: "firm adaptation / organization，仅在腾讯迁移卡住时读。"
+          url: "https://www.nber.org/books-and-chapters/economics-transformative-ai/transformative-ai-and-firms"
+      closed_book_prompt: "SNPS 所处的 industry architecture 里，control point 在哪里？"
+      primary:
+        project: snps
+        task: "画 Chip complexity → Design bottleneck → EDA/IP → Customer workflow。标出 technical bottleneck / strategic bottleneck / modular interfaces / control points。"
+      transfer:
+        project: tencent
+        task: "AI capability 怎样经过 Model → Product → Distribution → User → Advertiser 真正 capture？"
+      outputs:
+        - "Industry Architecture Map ×2"
+        - "分歧节点清单（research-question generator）"
+      ai_usage:
+        mode: "independent multi-worker divergence"
+        allowed: "让 3 个 worker 独立画 architecture graph，只比较分歧最大的节点"
+        forbidden: "问 AI「最重要的 bottleneck 是什么」"
+        special: "分歧本身就是 research-question generator。"
+
+    - day: 4
+      week: 1
+      date: "2026-09-10"
+      title: "Capital response / cyclicality"
+      theory:
+        - ref: capital-returns
+          title: "Chancellor (ed.) — Capital Returns: Investing Through the Capital Cycle"
+          scope: "supply-side capital cycle，而不是追逐 demand growth。"
+          url: "https://link.springer.com/book/10.1007/978-1-137-57165-6"
+      closed_book_prompt: "造船业的供给为什么不能迅速回应需求？"
+      primary:
+        project: csscdf
+        task: "建立 Freight/shipowner economics → New orders → Yard slots → Newbuild price → Capacity → Backlog → Delivery。重点不是「造船景气」，而是供给为什么不能迅速回应；哪些变量一旦变化 rent 会开始迁移。"
+      transfer:
+        project: snps
+        task: "高 ROIC 为什么没引来足够有效的 entry？"
+      outputs:
+        - "Capital response map（中船）"
+        - "Entry barrier note（SNPS）"
+      ai_usage:
+        mode: "raw timeline database"
+        allowed: "建 capital-response timeline database：过去 15–20 年 orders / ship prices / yard capacity / delivery / margins"
+        forbidden: "先给解释或 regime 划分"
+        special: "你自己先看时间序列提出 regime 划分，然后才让 AI challenge。"
+
+    - day: 5
+      week: 1
+      date: "2026-09-11"
+      title: "Week 1 closed-book IC"
+      exam: true
+      theory: []
+      closed_book_prompt: "三家公司的 Architecture → Rent → Capital/Competitive Response（90 分钟闭卷）"
+      primary:
+        project: all
+        task: "90 分钟闭卷分别画三个公司的 Architecture → Rent → Capital/Competitive Response。每家给出 5 个最重要 unknowns、3 个 load-bearing assumptions、3 个 observable disconfirmers。"
+      transfer:
+        project: all
+        task: "下午把三家公司 research Q 排序：RQ Priority = (Value Sensitivity × Uncertainty × Information Gain) / Research Cost"
+      outputs:
+        - "Week 1 IC transcript"
+        - "Ranked research question queue ×3"
+      graduation_line: "不能依赖 AI 才知道下一步问什么。"
+      ai_usage:
+        mode: "examiner, not tutor"
+        allowed: "一次只问一个问题；追问到你无法解释 mechanism 为止；最后根据 transcript 找 hand-waving / circular reasoning / unsupported causal arrows"
+        forbidden: "提示、补全、鼓励"
+        special: "AI 在考试日的唯一角色是 examiner。"
+
+    - day: 6
+      week: 2
+      date: "2026-09-14"
+      title: "Accounting anatomy"
+      theory:
+        - ref: mit-15515
+          title: "MIT OCW 15.515 Financial Accounting"
+          scope: "Accrual Accounting、Annual Report、Revenue Recognition 模块。"
+          url: "https://ocw.mit.edu/courses/15-515-financial-accounting-fall-2003/pages/readings/"
+      closed_book_prompt: "从 Net Income 到 FCF，中间会插进来哪些项目？"
+      primary:
+        project: snps
+        task: "从零 reconcile Net Income → Operating Cash Flow → FCF。重点：deferred revenue、SBC、amortization、acquisition accounting、capitalized/intangible economics。"
+      transfer:
+        project: csscdf
+        task: "搞懂 Orders ≠ Revenue ≠ Earnings ≠ Cash。"
+      outputs:
+        - "SNPS NI→FCF reconciliation（手工）"
+        - "中船 orders/revenue/earnings/cash 四层对照表"
+      ai_usage:
+        mode: "reconciliation checker"
+        allowed: "自动提取五年报表原始数据；逐项做 reconciliation checker，只告诉你「这里对不上 8.3 亿」"
+        forbidden: "给出 ratio、解释、或直接给答案"
+        special: "你必须自己重构报表。AI 只报告差异位置，不报告原因。"
+
+    - day: 7
+      week: 2
+      date: "2026-09-15"
+      title: "Financial statement decomposition"
+      theory:
+        - ref: penman-fsa
+          title: "Penman — Financial Statement Analysis and Security Valuation"
+          scope: "把 financial statement analysis 与 active valuation 连起来。"
+          url: "https://business.columbia.edu/faculty/research/financial-statement-analysis-and-security-valuation"
+        - ref: nissim-penman
+          title: "Nissim & Penman — Ratio Analysis and Equity Valuation"
+          scope: "margin × turnover → profitability → growth。"
+          url: "https://www.columbia.edu/~dn75/Ratio_analysis_and_equity_valuation_From_research_to_practice.pdf"
+      closed_book_prompt: "腾讯的 operating 与 financing 应该怎么切开？"
+      primary:
+        project: tencent
+        task: "拆 Sales → Margin → Asset Turnover → Operating profitability，并区分 operating vs financing。"
+      transfer:
+        project: snps
+        task: "同样 decomposition。"
+      outputs:
+        - "Decomposition sheet ×2"
+      ai_usage:
+        mode: "ratio provenance graph"
+        allowed: "生成 ratio provenance graph：每个 ratio 必须能点回原始 filing line item"
+        forbidden: "无法审计的汇总数字"
+        special: "以后 agent 算出来的 ROIC 不会变成无法审计的数字。"
+
+    - day: 8
+      week: 2
+      date: "2026-09-16"
+      title: "ROIC / incremental ROIC"
+      theory:
+        - ref: mauboussin-roic
+          title: "Mauboussin & Callahan — ROIC and the Investment Process"
+          scope: "ROICs, how they change, and shareholder returns。"
+          url: "https://www.morganstanley.com/im/en-us/individual-investor/insights/consilient-observer/roic-and-the-investment-process.html"
+      closed_book_prompt: "AI advertising 的 incremental revenue 需要多少 incremental capital？"
+      primary:
+        project: tencent
+        task: "回答 incremental ROIC 问题，不要只算腾讯整体历史 ROIC。"
+      transfer:
+        project: snps
+        task: "区分 organic investment / acquired intangibles / Ansys acquisition capital，讨论不同 ROIC 口径各自在回答什么问题。"
+      outputs:
+        - "Incremental ROIC note ×2"
+        - "ROIC 口径选择理由（accounting judgment rep）"
+      ai_usage:
+        mode: "multiple definitions side-by-side"
+        allowed: "并列多个 ROIC 定义，故意不选「正确答案」"
+        forbidden: "推荐一个口径"
+        special: "你自己解释：为什么这个 case 应该使用这个 denominator。"
+
+    - day: 9
+      week: 2
+      date: "2026-09-17"
+      title: "FCF translation"
+      theory:
+        - ref: damodaran-valuation
+          title: "Damodaran — Valuation Online Class"
+          scope: "#2 Intrinsic Value、#7 Cash Flows、#8 Growth、#9 Terminal Value、#10 Value Enhancement。"
+          url: "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/webcastvalonline.htm"
+      closed_book_prompt: "AI chip complexity 提升，第一个被打到的 SNPS operating driver 是什么？"
+      primary:
+        project: snps
+        task: "至少做三条完整 causal chains：AI chip complexity → … → FCF。"
+      transfer:
+        project: csscdf
+        task: "Ship price → Order vintage → Delivery → GM → Working Capital → FCF。"
+      outputs:
+        - "Causal chain ×3（SNPS）"
+        - "Cycle-to-FCF chain（中船）"
+      ai_usage:
+        mode: "symbolic model first"
+        allowed: "先只创建 algebraic relationships，不填数（如 Revenue = f(volume, price, share)）；你给 assumptions 后再填历史数据"
+        forbidden: "先建带数字的 spreadsheet"
+        special: "防止 spreadsheet 先于 thinking。"
+
+    - day: 10
+      week: 2
+      date: "2026-09-18"
+      title: "Financial Translation Exam"
+      exam: true
+      theory: []
+      closed_book_prompt: "给定 surprise，哪张表先变？方向？幅度？timing？"
+      primary:
+        project: all
+        task: "三个 surprise 闭卷跑 Event → KPI → Revenue → Margin → Reinvestment → FCF：SNPS design intensity +10%；腾讯广告 ROI +15%；中船新船价格 -8%。"
+      transfer:
+        project: all
+        task: "每个 surprise 建 Bear / Base / Bull。"
+      outputs:
+        - "Financial translation exam sheet ×3"
+        - "Bear/Base/Bull ×3"
+      ai_usage:
+        mode: "flight simulator"
+        allowed: "随机扰动一个变量但隐藏答案，要求你预测哪张表先变 / 方向 / 幅度 / timing"
+        forbidden: "先给答案再让你验证"
+        special: "这是公司财务 flight simulator。"
+
+    - day: 11
+      week: 3
+      date: "2026-09-21"
+      title: "Reverse valuation"
+      theory:
+        - ref: expectations-investing
+          title: "Mauboussin & Rappaport — Expectations Investing"
+          scope: "从价格隐含预期出发，再寻找 expectations revision。"
+          url: "https://www.expectationsinvesting.com/"
+        - ref: expectations-tutorials
+          title: "Expectations Investing — Online Tutorials & Resources"
+          scope: "10 个免费 tutorials + spreadsheets。"
+          url: "https://www.expectationsinvesting.com/tutorials"
+      closed_book_prompt: "当前 SNPS 股价要求什么必须为真？"
+      primary:
+        project: snps
+        task: "不看自己的 bull/base forecast，直接 reverse：Price → Revenue growth + Margin + Duration。"
+      transfer:
+        project: tencent
+        task: "同样 reverse，比较两家的 implied duration。"
+      outputs:
+        - "Price-Implied Thesis v1（SNPS）"
+      ai_usage:
+        mode: "solver, not valuator"
+        allowed: "写 solver；UI 只允许修改 4–5 个 economic variables，并显示哪个变量最敏感"
+        forbidden: "自动给出「合理估值」"
+        special: "目标是 training intuition，不是模型复杂度。"
+
+    - day: 12
+      week: 3
+      date: "2026-09-22"
+      title: "Expectations infrastructure"
+      theory: []
+      closed_book_prompt: "腾讯 AI capability 到 value，中间哪一环最脆弱？"
+      primary:
+        project: tencent
+        task: "建立 AI capability → Product KPI → Advertiser/User economics → Revenue → FCF → Value，然后写 Reality / Consensus / Price 三栏。"
+      transfer:
+        project: snps
+        task: "比较你的 model 与 sell-side / current consensus。"
+      outputs:
+        - "Reality/Consensus/Price 三栏（腾讯）"
+        - "Consensus snapshot（带时间戳，禁止事后覆盖）"
+      ai_usage:
+        mode: "PIT consensus snapshot"
+        allowed: "保存带时间戳的 consensus snapshot"
+        forbidden: "事后覆盖或修改历史 snapshot"
+        special: "以后才能知道：你当时真的和市场不同，还是事后觉得自己不同。这是 PIT discipline。"
+
+    - day: 13
+      week: 3
+      date: "2026-09-23"
+      title: "Entry / strategic response / fade"
+      theory:
+        - ref: mit-14271
+          title: "MIT 14.271 Industrial Organization I（Ellison）"
+          scope: "Lectures 16–19：Entry 与 Strategic Investment。"
+          url: "https://ocw.mit.edu/courses/14-271-industrial-organization-i-fall-2022/resources/lecture-notes/"
+      closed_book_prompt: "SNPS 的高 rent 为什么没有被竞争消灭？"
+      primary:
+        project: snps
+        task: "画 Rent → Entry incentive → Barrier → Strategic response → Fade。"
+      transfer:
+        project: csscdf
+        task: "同样逻辑，但 barrier 是 physical capacity / cycle lag。"
+      outputs:
+        - "Fade map ×2"
+      ai_usage:
+        mode: "failed entrants only"
+        allowed: "搜集失败 entrant 案例"
+        forbidden: "「竞争格局介绍」或赢家列表"
+        special: "失败案例比竞争格局介绍更能识别真实 barrier。"
+
+    - day: 14
+      week: 3
+      date: "2026-09-24"
+      title: "Cyclical expectations"
+      theory: []
+      closed_book_prompt: "如果 newbuild prices 今天见顶，earnings、consensus、stock 分别可能什么时候见顶？"
+      primary:
+        project: csscdf
+        task: "建立 Order Vintage → Delivery → Margin → Earnings → Cash，并区分 Current Ship Economics ≠ Reported Earnings。"
+      transfer:
+        project: snps
+        task: "同样问：当前报表反映的是哪个 vintage 的经济性？"
+      outputs:
+        - "Order vintage → earnings timing map"
+        - "PIT replay 下注记录"
+      ai_usage:
+        mode: "PIT historical replay"
+        allowed: "随机选择过去一个历史节点（如 2007/2013/2021），只给当时能知道的数据；你先下注下一阶段 order / margin / equity return，然后才揭晓"
+        forbidden: "hindsight historical case review"
+        special: "先下注再揭晓，比看后见之明案例强很多。"
+
+    - day: 15
+      week: 3
+      date: "2026-09-25"
+      title: "Expectations IC"
+      exam: true
+      theory: []
+      closed_book_prompt: "三家公司的 Reality / Consensus / Price / My difference / What resolves it?"
+      primary:
+        project: all
+        task: "三个公司全部闭卷填表：Reality | Consensus | Price | My difference | What resolves it?"
+      transfer:
+        project: all
+        task: "强迫排序：哪个 variant perception 最大？哪个最可信？哪个已经 price in？"
+      outputs:
+        - "Variant perception table ×3"
+        - "Ranked variant perception"
+      ai_usage:
+        mode: "anonymous transfer test"
+        allowed: "给一个匿名 historical case 做 45 分钟 transfer test，隐藏公司名、未来股价和最终结果"
+        forbidden: "使用三家已练公司做测试"
+        special: "如果只能分析 SNPS/腾讯/中船而不能迁移到陌生公司，说明框架还没有 proceduralize。"
+
+    - day: 16
+      week: 4
+      date: "2026-09-28"
+      title: "Forecasting"
+      theory:
+        - ref: superforecasting
+          title: "Tetlock & Gardner — Superforecasting"
+          scope: "evidence aggregation、概率思考、持续更新、keeping score。"
+          url: "https://www.penguinrandomhouse.com/books/227815/superforecasting-by-philip-e-tetlock-and-dan-gardner/"
+        - ref: gjopen
+          title: "Good Judgment Open"
+          scope: "持续 probability forecasting 与 scoring 的练习场。"
+          url: "https://www.gjopen.com/"
+      closed_book_prompt: "我最有把握的三条预测是什么？它们怎么结算？"
+      primary:
+        project: all
+        task: "三个项目建立 15–20 条 Forecast + Prior + Probability + Resolution date + Resolution rule。"
+      transfer:
+        project: all
+        task: "每条预测标注 base rate 来源。"
+      outputs:
+        - "Forecast Ledger（15–20 条，可结算）"
+      ai_usage:
+        mode: "forecast linter"
+        allowed: "拒绝任何不可结算 / 时间窗口不明确 / threshold 模糊 / resolution source 不明确的 forecast"
+        forbidden: "代你写预测内容或概率"
+        special: "AI 只做格式与可证伪性检查。"
+
+    - day: 17
+      week: 4
+      date: "2026-09-29"
+      title: "Falsification / second-level thinking"
+      theory:
+        - ref: howard-marks
+          title: "Howard Marks — The Most Important Thing Illuminated"
+          scope: "Ch.1、4–7、10、14、16、19。"
+          url: "https://cup.columbia.edu/book/the-most-important-thing-illuminated/9780231162845/"
+      closed_book_prompt: "三个 case 各自最强的 bear mechanism 是什么？"
+      primary:
+        project: all
+        task: "先自己写三个 case 的最强 bear mechanism，然后才允许 blind challenge。"
+      transfer:
+        project: all
+        task: "对比你的 bear 与 AI 独立形成的 bear，找出你没想到的机制。"
+      outputs:
+        - "Bear mechanism ×3（自写）"
+        - "Competing hypotheses 对照与区分证据"
+      ai_usage:
+        mode: "blind independent hypothesis"
+        allowed: "把 evidence packet 给 AI、不给你的 conclusion，让它独立形成最强解释模型，并列出哪些证据能区分两个 competing hypotheses"
+        forbidden: "「Review my thesis」「criticize my memo」"
+        special: "不给结论的独立建模，独立性远高于让 AI 批评你的 memo。"
+
+    - day: 18
+      week: 4
+      date: "2026-09-30"
+      title: "Position / opportunity cost"
+      theory: []
+      closed_book_prompt: "在什么参数区域，我的 position decision 会翻转？"
+      primary:
+        project: all
+        task: "Probability × Payoff × Confidence × Correlation → Position。三个公司都做 Buy / Add / Hold / Trim / Exit / Pass。腾讯和 SNPS 必须针对真实仓位。"
+      transfer:
+        project: all
+        task: "找出每个决定的 decision boundary。"
+      outputs:
+        - "Position Decision Tape ×3"
+        - "Decision boundary 记录"
+      ai_usage:
+        mode: "sensitivity surface"
+        allowed: "改变 probability / upside / downside / correlation，输出敏感性曲面"
+        forbidden: "推荐仓位或给出目标价"
+        special: "真正重要的是找到 decision boundary，不是找到「答案」。"
+      safety: "只记录 decision tape，不下单、不改变实际仓位。"
+
+    - day: 19
+      week: 4
+      date: "2026-10-01"
+      title: "Full Underwriting Exam: SNPS"
+      exam: true
+      theory: []
+      closed_book_prompt: "从空白开始跑完整链条。"
+      primary:
+        project: snps
+        task: "Tech Change → Architecture → Rent → Capital/Competition → Financials → Expectations → Forecast → Position。限制：3–5 页核心 memo、一个 model、5 个 load-bearing assumptions、5 个 forecasts、3 个 kill conditions、明确 position decision。"
+      transfer:
+        project: all
+        task: "无（当天全部投入 underwriting）。"
+      outputs:
+        - "SNPS Investment Memo（3–5 页）"
+        - "Model + 5 assumptions + 5 forecasts + 3 kill conditions"
+      ai_usage:
+        mode: "post-freeze audit"
+        allowed: "memo freeze 之后：logic/provenance audit；blind challenger；fact verification"
+        forbidden: "把 memo 重写成更漂亮的版本"
+        special: "训练对象是你的 cognition，不是文档质量。"
+
+    - day: 20
+      week: 4
+      date: "2026-10-02"
+      title: "Final IC / Zero-base portfolio"
+      exam: true
+      theory: []
+      closed_book_prompt: "如果今天零持仓，你会怎么配置？"
+      primary:
+        project: all
+        task: "上午三个口试——SNPS：为什么这是/不是 attractive bet，而不仅是好公司？腾讯：如果今天零持仓，你会建多少？中船：当前股价是在交易未来 cycle，还是滞后的 reported earnings？"
+      transfer:
+        project: all
+        task: "下午 Portfolio = 100% Cash，重新排列所有 capital opportunities。"
+      outputs:
+        - "Opportunity ranking"
+        - "Position decision"
+        - "Monitoring plan"
+        - "Skill diagnosis（error taxonomy）"
+      ai_usage:
+        mode: "error taxonomy only"
+        allowed: "对完整 IC transcript 只做错误分类：mechanism / accounting / probability-calibration / expectations / sizing / evidence-provenance error"
+        forbidden: "评价表现好坏、给鼓励"
+        special: "这张 error taxonomy 直接决定 bootcamp 后的 JIT curriculum。"
+      safety: "零基组合是纸面演练，不构成下单指令。"
+
+  deferred_to_jit:
+    reason: "现在最稀缺的是把主链 proceduralize，不是扩大 intellectual surface area。"
+    items:
+      - "NBER AI book Ch.4 / Ch.6 / Ch.12"
+      - "MS&E435 全套课程"
+      - "MIT 14.271 其他 lectures"
+      - "PC / Internet / Cloud / Smartphone historical pattern library"
+      - "更多 valuation theory"
+      - "forecasting theory 深挖"
+
+  graduation_outputs:
+    - "Opportunity ranking + Position decision + Monitoring plan"
+    - "Skill diagnosis：我已 proceduralize 什么 / 哪一步仍依赖 AI / 哪类错误最频繁"
+    - "可迭代的投资 production function：Observe → Understand → Model → Price → Bet → Score → Learn"

@@ -1,3 +1,8 @@
+# ★★★ 已归档，不再维护（2026-09-11 起）★★★
+# 权威 manifest 已迁移到 content/bootcamp_modules.yaml（v3，M0-M7，由 scripts/modules.py 驱动）。
+# 本文件（16 周长版）与 bootcamp_modules.yaml 曾并行手动同步，已被证明会漂移——
+# 例如 Jacobides 2006《Benefiting from Innovation》的完成状态两个文件一度不一致，
+# 详见 outputs/DESIGN_REVIEW_v3_candidate.md。保留本文件仅作历史参考，请勿据此更新进度或估时。
 curriculum:
   slug: core-tech-change-to-position
   name: "Core Curriculum: Tech Change → Position"
@@ -9,13 +14,32 @@ curriculum:
   north_star:
     - "Tech Change"
     - "Constraint"
+    - "Interdependency"
     - "Architecture"
-    - "Rent"
+    - "Bottleneck"
+    - "Value Capture"
     - "Capital Response"
     - "FCF"
     - "Expectations"
     - "Position"
   operating_principle: "课程服务 project，而不是 project 用来证明课程学完了。"
+  # 2026-09-11 修订：Phase I 补 Architecture Engine
+  revision_2026_09_11:
+    problem: >
+      原 Weeks 1-4 擅长回答「rent 在哪里」，但缺少「architecture 为什么会变成这样、
+      bottleneck 能维持多久」这一层。容易从「这里有 bottleneck」直接跳到「所以这里 capture value」。
+    change: >
+      innovation strategy 文献不单独开课，只补 4 篇进入主课（Henderson & Clark、Jacobides & Winter、
+      Cohen & Levinthal、Adner & Kapoor），其余降级为 JIT。
+    hard_constraint: >
+      ★ 不要因为 architecture / value capture 是 owner 的优势区且智力上有趣，
+      就把 innovation strategy 扩张成第四条平行学习线。
+      更需要补强的是 Weeks 5-8（financial translation）与 13-16（expectations / judgment）。
+    three_layers:
+      layer1_industrial_mechanism: "Tech → Constraint → Architecture → Rent（innovation strategy + IO）"
+      layer2_financial_translation: "Rent → ROIC → Reinvestment → FCF（accounting + valuation）"
+      layer3_investment_return: "FCF → Expectations → Variant → Position"
+      note: "innovation strategy 只服务 Layer 1。"
   weekly:
     - week: 1
       question: "AI stack 上钱现在在哪里？"
@@ -28,17 +52,34 @@ curriculum:
       decision_reps: "记录一个 AI value-pool 判断及其可证伪条件。"
       output: "AI Profit Pool Map v1"
     - week: 2
-      question: "技术 bottleneck 如何创造 rent？"
+      question: "Scarcity 为什么形成 bottleneck？architecture 会不会改变它？"
+      chain: "Constraint → Interdependency → Architecture → Bottleneck"
       learning:
+        - ref: henderson-clark-1990
+          title: "Henderson & Clark 1990 — Architectural Innovation"
+          scope: >
+            ★ 新增。当技术改变的是组件之间的关系（而非组件本身）时，
+            既有 organizational knowledge 为什么会失效。
+            负责回答「architecture 为什么会变」，与 Baldwin 的「bottleneck 为什么产生控制权」配对。
+          url: "https://doi.org/10.2307/2393549"
+          open_copy: "http://dspace.mit.edu/bitstream/handle/1721.1/48004/generationalinno00hend.pdf?sequence=1"
+        - ref: baldwin-bottlenecks
+          title: "Baldwin — Bottlenecks, Modules and Dynamic Architectural Capabilities"
+          scope: >
+            ★ 权重上调为全 curriculum 最重要的 strategy paper 之一 ——
+            它与 spine「Constraint → Architecture → Rent」几乎同构。
+            technical bottleneck / strategic bottleneck / modular interface / control point。
+          url: "https://www.hbs.edu/ris/download.aspx?name=15-028.pdf"
         - ref: mse435-2-3
-          title: "Stanford MS&E435 #2–3 + Baldwin bottlenecks"
+          title: "Stanford MS&E435 #2–3"
           scope: "围绕 chips、memory、energy、interconnect 与 compute demand 的约束。"
           url: "https://mse435.stanford.edu/ai-compute-demand.html"
       project: "在 GPU / HBM / network / power 中选一个，建立 Constraint → Rent map。"
       decision_reps: "写出一个瓶颈放松或转移时的反向预测。"
       output: "Constraint → Rent map"
     - week: 3
-      question: "Innovation 为什么不等于 innovator 赚钱？"
+      question: "创造价值的人为什么不一定 capture？"
+      chain: "Value creation → Added value → Bargaining → Capture"
       learning:
         - ref: teece-1986
           title: "Teece 1986 — Profiting from Technological Innovation"
@@ -48,16 +89,26 @@ curriculum:
           title: "Brandenburger & Stuart — Value-Based Business Strategy"
           scope: "理解 supplier / buyer / competitor asymmetry 与 firm added value。"
           url: "https://onlinelibrary.wiley.com/doi/10.1111/j.1430-9134.1996.00005.x"
+      note: "★ 本周已达 PhD-level intellectual core，不再增加 ecosystem / value capture 论文。"
       project: "比较 NVDA / hyperscaler / model vendor 的 value creation 与 value capture。"
       decision_reps: "对一个 capture 假设标注证据等级与替代解释。"
       output: "Value creation vs capture"
     - week: 4
-      question: "Rent 为什么会迁移？"
+      question: "Architecture / firm boundaries / capital entry 如何让 rent 迁移？"
+      chain: "Capabilities + Transaction Costs → Firm Boundaries → Industry Architecture → Rent → Capital Response"
       learning:
         - ref: jacobides-2006
           title: "Jacobides, Knudsen & Augier — Benefiting from Innovation"
           scope: "重点看 industry architecture、complementarity、mobility。"
           url: "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1309509"
+        - ref: jacobides-winter-2005
+          title: "Jacobides & Winter 2005 — The Co-evolution of Capabilities and Transaction Costs"
+          scope: >
+            ★ 新增。解释 vertical scope 为什么变化：能力差异是纵向专业化的必要条件，
+            交易成本下降只有在价值链能力异质时才导致解体。
+            提供 Week 2（architecture）到 Week 4（rent migration）之间缺失的 firm-boundary 环节。
+          url: "https://doi.org/10.1002/smj.460"
+          open_copy: "https://repository.upenn.edu/mgmt_papers/36/"
         - ref: capital-returns
           title: "Capital Returns — Edward Chancellor / Marathon"
           scope: "前半部分选择性阅读，强制加入 capital response。"
@@ -125,7 +176,16 @@ curriculum:
       output: "Capital-response case"
     - week: 10
       question: "Firm / organization 如何影响 AI capture？"
+      chain: "AI → Absorptive Capacity → Organizational Complementarity → Firm Performance"
       learning:
+        - ref: cohen-levinthal-1990
+          title: "Cohen & Levinthal 1990 — Absorptive Capacity"
+          scope: >
+            ★ 新增。AI capability ≠ AI adoption。企业既有技术知识、组织惯例与互补人力资本
+            决定它能否真正吸收新技术；absorptive capacity 具有路径依赖。
+            与 NBER Ch.7 构成 old theory + current application 配对。
+          url: "https://doi.org/10.2307/2393553"
+          open_copy: "https://josephmahoney.web.illinois.edu/BA545_Fall%202022/Cohen%20and%20Levinthal%20(1990).pdf"
         - ref: nber-ch7-ch12
           title: "NBER Economics of Transformative AI — Ch.7 + Ch.12"
           scope: "firm adaptation、investment、organization、tacit knowledge、decision rights。"
@@ -134,8 +194,17 @@ curriculum:
       decision_reps: "写出一个 capability → rent 的中间机制。"
       output: "Capability → Rent case"
     - week: 11
-      question: "AI 会怎样改变产业边界？"
+      question: "AI 会怎样改变产业边界与生态位？"
+      chain: "Firm Boundary → Ecosystem → Complementarity → Bottleneck → Industry Architecture"
       learning:
+        - ref: adner-kapoor-2010
+          title: "Adner & Kapoor 2010 — Value Creation in Innovation Ecosystems"
+          scope: >
+            ★ 新增。关键不对称：upstream component 的创新难度提升会增厚技术领先者收益，
+            downstream complement 的创新难度提升则侵蚀之；纵向整合的有效性随技术生命周期变化。
+            直接适用于 GPU / HBM / networking / power / cooling / software / model 这种多层系统。
+          url: "https://doi.org/10.1002/smj.821"
+          open_copy: "https://repository.upenn.edu/mgmt_papers/44/"
         - ref: nber-ch4-ch6
           title: "NBER Economics of Transformative AI — Ch.4 + Ch.6"
           scope: "upstream market power、downstream competition、agents、transaction costs、market design。"
@@ -198,6 +267,40 @@ curriculum:
       project: "完成一个当前 tech-change opportunity 的完整 underwriting。"
       decision_reps: "写 postmortem template，区分 thesis、forecast、outcome、attribution。"
       output: "Investment Memo + postmortem template"
+  # 2026-09-11 新增：innovation strategy 的 JIT 池
+  # 规则：不排期、不占 weekly learning 预算，只有触发条件出现时才读。
+  jit_reading:
+    rule: >
+      这些论文重要但当前不占时间。触发条件出现时才打开，读完写进当次 case 的 model update，
+      不单独产出读书笔记。若某篇连续被触发 2 次以上，再考虑升级进主课。
+    pool:
+      - ref: dosi-1982
+        title: "Dosi 1982 — Technological Paradigms and Technological Trajectories"
+        trigger: "研究 scaling law 是否构成 paradigm、Transformer → post-Transformer、GPU → domain-specific architecture 时"
+      - ref: anderson-tushman-1990
+        title: "Anderson & Tushman 1990 — Dominant Design"
+        trigger: "判断 AI accelerator architecture 是否已进入 dominant design 时"
+      - ref: klepper-1996
+        title: "Klepper 1996 — Industry Lifecycle"
+        trigger: "MIT 14.271 + Capital Returns 已覆盖大部分功能；仅当需要 entry/exit 与厂商数演化的形式化模型时"
+      - ref: tripsas-1997
+        title: "Tripsas 1997 / Tripsas & Gavetti 2000 — Incumbent Adaptation"
+        trigger: "研究 Intel / Adobe / Salesforce 等 legacy software 的 AI transition 时"
+      - ref: colfer-baldwin-2016
+        title: "Colfer & Baldwin 2016 — The Mirroring Hypothesis"
+        trigger: >
+          ★ 直接绑定 IBM PC / NVIDIA case —— technical architecture ↔ organizational architecture。
+          不是每个 case 都读，只在该 case 出现组织边界与技术边界不一致时读。
+      - ref: jacobides-2018
+        title: "Jacobides, Cennamo & Gawer 2018 — Towards a Theory of Ecosystems"
+        trigger: "仅作 reference。若 Adner & Kapoor 已解决当前投资问题，不必为完整理论再读"
+      - ref: gawer-henderson-2007
+        title: "Gawer & Henderson 2007 — Platform Owner Strategy"
+        trigger: "研究 NVIDIA / CUDA 等 platform owner 的互补品进入策略时"
+      - ref: adner-lieberman-2021
+        title: "Adner & Lieberman 2021 — Disruption Through Complements"
+        trigger: "second-pass theory。主链跑顺后再读"
+
   longitudinal_projects:
     - slug: ai-infra
       name: "AI Infra"
@@ -219,10 +322,16 @@ curriculum:
       - "Superforecasting — Tetlock & Gardner"
       - "The Most Important Thing Illuminated — Howard Marks（选择性）"
     papers:
-      - "Teece — Profiting from Technological Innovation"
-      - "Brandenburger & Stuart — Value-Based Business Strategy"
-      - "Jacobides et al. — Benefiting from Innovation"
-      - "Baldwin — Bottlenecks, Modules and Dynamic Architectural Capabilities"
+      # Layer 1 — Architecture Engine（2026-09-11 后的 innovation strategy core，共 8 篇）
+      - "Henderson & Clark — Architectural Innovation（★新增，Week 2）"
+      - "Baldwin — Bottlenecks, Modules and Dynamic Architectural Capabilities（Week 2，权重最高）"
+      - "Teece — Profiting from Technological Innovation（Week 3）"
+      - "Brandenburger & Stuart — Value-Based Business Strategy（Week 3）"
+      - "Jacobides et al. — Benefiting from Innovation（Week 4）"
+      - "Jacobides & Winter — The Co-evolution of Capabilities and Transaction Costs（★新增，Week 4）"
+      - "Cohen & Levinthal — Absorptive Capacity（★新增，Week 10）"
+      - "Adner & Kapoor — Value Creation in Innovation Ecosystems（★新增，Week 11）"
+      # Layer 2-3
       - "Nissim & Penman — Ratio Analysis and Equity Valuation"
       - "NBER — Transformative AI and Firms + AI’s Use of Knowledge in Society"
     video_sets:

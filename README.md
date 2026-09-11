@@ -3,6 +3,24 @@
 Local-first, concept-centric learning workbench. See
 `Personal_Learning_OS_v1_Tech_Plan.md` for the full design.
 
+## 当前模式：Deliberate Practice Bootcamp v3 — module 制（M0-M7）
+
+Manifest：`content/bootcamp_modules.yaml`（8 module，知识优先）
+进度状态：`data/module_progress.yaml`
+产物：`outputs/`
+**AI 协作契约：`AGENTS.md`** — 任何 agent session 开始前必须先读
+
+```bash
+.venv/bin/python scripts/modules.py status       # module 总览
+.venv/bin/python scripts/modules.py show M0      # 单个 module 详情
+.venv/bin/python scripts/modules.py log M0 --hours 2.5 --kind material --note "..."
+.venv/bin/python scripts/modules.py forecast add M7 "..." --metric "..." --threshold "..." --resolves 2027-06-30 --source "..."
+.venv/bin/python scripts/modules.py dashboard    # 生成 outputs/dashboard.html
+```
+
+核心约束：AI 永远晚于用户的第一次 attempt；概念要能跨公司迁移；Phase A（M0-M7）知识优先，
+真正的闭卷/迁移/下注检验留给 Phase B（80% 真实候选 underwriting）。
+
 ## Setup (reproducible)
 
 Bare `python3` on this machine has no project dependencies installed —

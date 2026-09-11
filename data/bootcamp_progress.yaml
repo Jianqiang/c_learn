@@ -1,0 +1,35 @@
+days:
+  1:
+    artifacts:
+    - outputs/day01/00_closed_book_FIRST.md
+    - outputs/day01/01_snps_company_map_v0.md
+    - outputs/day01/02_tencent_company_map_v0.md
+    - outputs/day01/03_twenty_unknowns.md
+    - outputs/day01/04_snps_orientation_pack.md
+    - outputs/day01/05_tencent_orientation_pack.md
+    - outputs/day01/06_reconciliation_flags.md
+    completed: true
+    closed_book: true
+    note: 3 个 output 实质完成：SNPS map(校正好) + Tencent map(4 引擎,但未跳出 segment 框架) + unknowns(仅
+      6 条,形态偏'差问题',欠账转 Day5)。Day2 任务书未写。
+    closed_book_at: '2026-09-07T15:57:00'
+    completed_at: '2026-09-08T15:17:07'
+  2:
+    artifacts:
+    - outputs/DESIGN_REVIEW_v2.md
+    - outputs/METHOD_how_to_use_ai_output.md
+    - outputs/METHOD_interaction_modes.md
+    - outputs/day02/00_closed_book_FIRST.md
+    - outputs/day02/01_value_creation_capture_map.md
+    - outputs/day02/03_research_questions.md
+    - outputs/day02/04_memo_teece_ai_rent.md
+    - outputs/day02/REVIEW_handoff_prompt.md
+    completed: partial
+    closed_book: true
+    note: PARTIAL。Part A 闭卷完成(守三词禁令)。Theory 实测 3-4h vs 计划 60m。Part B 八维度/Part C counterfactual/Part
+      D 中船 全空；capture map 111 空单元。但额外产出高质量 memo：Teece 框架应用到 10 家 AI 公司 + 五关框架(Asset
+      Specificity/Bilateral Dependence/Redeployability/Bargaining Power/Observed Rent)
+      + 两次真概念修正。判定 owner 选了深度而非交差，正确。触发设计诊断 DESIGN_REVIEW_v2：原 manifest 材料需 90-125h
+      vs 供给 20h，缺口 4.5-6x，算术前提不成立。待 owner 决定 Q1(AI主线是否成为训练器) / Q2(材料清单是否删减) 后重构为 5
+      module 制。
+    closed_book_at: '2026-09-09T16:40:00'
