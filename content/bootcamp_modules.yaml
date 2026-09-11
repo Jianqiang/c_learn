@@ -105,7 +105,7 @@ bootcamp:
       name: "Technology Change → Architecture → Rent"
       question: "Constraint 如何变成 Architecture，Architecture 为什么决定谁 capture value？"
       status: in_progress
-      est_hours: "20-21"
+      est_hours: "18-19"
       chain: "Constraint → Interdependency → Architecture → Bottleneck → Value Capture"
       materials:
         - ref: teece-1986
@@ -124,8 +124,7 @@ bootcamp:
           url: "https://www.hbs.edu/ris/download.aspx?name=15-028.pdf"
         - ref: jacobides-2006
           title: "Jacobides, Knudsen & Augier — Benefiting from Innovation"
-          status: pending
-          est_hours: "2-3"
+          status: done
           scope: "industry architecture 如何决定 appropriation"
           url: "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1309509"
         - ref: henderson-clark-1990
@@ -138,7 +137,6 @@ bootcamp:
             缺少「architecture 为什么变、bottleneck 能维持多久」。
           url: "https://doi.org/10.2307/2393549"
           open_copy: "http://dspace.mit.edu/bitstream/handle/1721.1/48004/generationalinno00hend.pdf?sequence=1"
-          applies_to: "教学顺序：IBM PC Guided Lab Round 1 → 本篇 → 回看 IBM PC。不要提前读，会污染独立判断。"
       jit_pool:
         rule: "触发条件出现才读，读完只写进当次 case 的 model update，不产出读书笔记。"
         items:
@@ -158,20 +156,22 @@ bootcamp:
         - "Teece 三概念（appropriability regime / dominant design / complementary assets）"
         - "五关框架：Asset Specificity → Bilateral Dependence → Redeployability → Bargaining Power → Observed Rent"
         - "10 家公司 Teece 判断地图（outputs/day02/04_memo_teece_ai_rent.md）"
-        - "IBM PC Guided Lab 01 brief 已落地（outputs/m1/lab01_ibm_pc/00_brief_and_round1.md），Round 1 未提交"
+        - "Jacobides 2006 — Benefiting from Innovation"
       remaining:
-        - "★ IBM PC Guided Lab 01 Round 1：在 1981 信息集里跑 bottleneck → interface → control point → 可结算预测（owner 先做，AI 不得剧透后续结果）"
-        - "★ 读 Henderson & Clark（Round 1 提交之后）"
-        - "读 Jacobides 2006"
+        - "★ 读 Henderson & Clark"
         - "20-45 分钟 micro exercise：陌生系统中区分 component change / architectural change / complement / bottleneck / control / bargaining rent"
       exit_criteria:
         - "闭卷画出任一给定公司的 Innovation → Asset Specificity → Bilateral Dependence → Bargaining Power → Observed Rent"
         - "能区分 component innovation 与 architectural innovation，并说明后者为何让在位者失效"
         - "能回答「这个 bottleneck 能维持多久」，给出 modularization / standardization / integration 三条侵蚀路径"
       ai_usage:
-        mode: "independent divergence + fact extraction，Round 1 提交前不给结论"
-        allowed: "事实三栏提取；Round 1 提交后做 reconciler（只报概念混淆，不报历史结果）"
-        forbidden: "剧透 IBM PC 后续结果；在 owner 提交前给出 control point 结论"
+        mode: "independent divergence + fact extraction，owner 提交 micro exercise 前不给结论"
+        allowed: "事实三栏提取；micro exercise 提交后做 reconciler（只报概念混淆，不报答案）"
+        forbidden: "在 owner 提交前给出 control point 结论"
+
+      note_2026_09_11_pm: >
+        IBM PC Guided Lab 01（分轮隐藏证据的重项目）按 v3「知识优先，不做重项目」的方向取消。
+        brief 仍留档于 outputs/m1/lab01_ibm_pc/00_brief_and_round1.md，仅作历史参考，不再是待办项。
 
     - id: M1
       name: "Financial Accounting"
