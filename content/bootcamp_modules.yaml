@@ -105,13 +105,13 @@ bootcamp:
       name: "Technology Change → Architecture → Rent"
       question: "Constraint 如何变成 Architecture，Architecture 为什么决定谁 capture value？"
       status: in_progress
-      est_hours: "18-19"
+      est_hours: "14-15"
       chain: "Constraint → Interdependency → Architecture → Bottleneck → Value Capture"
       materials:
         - ref: teece-1986
           title: "Teece — Profiting from Technological Innovation"
           status: done
-          actual_hours: "3-4"
+          actual_hours: "2.5"
           url: "https://www.sciencedirect.com/science/article/pii/0048733386900272"
         - ref: brandenburger-stuart-1996
           title: "Brandenburger & Stuart — Value-Based Business Strategy"

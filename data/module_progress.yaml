@@ -3,11 +3,23 @@ modules:
     status: in_progress
     log:
     - date: '2026-09-08'
-      hours: 3.5
+      hours: 2.5
       kind: material
-      note: Teece 1986 + Brandenburger & Stuart 1996
+      note: Teece 1986 - Profiting from Technological Innovation
+    - date: '2026-09-08'
+      hours: 2.5
+      kind: material
+      note: Brandenburger & Stuart 1996 - Value-Based Business Strategy
     - date: '2026-09-09'
       hours: 1.5
       kind: application
       note: AI rent memo：五关框架 + 10 家公司判断地图
+    - date: '2026-09-10'
+      hours: 2.5
+      kind: material
+      note: Baldwin - Bottlenecks, Modules and Dynamic Architectural Capabilities（补记，此前遗漏未 log）
+    - date: '2026-09-11'
+      hours: 3
+      kind: material
+      note: Jacobides, Knudsen & Augier 2006 - Benefiting from Innovation（更正：此前误记 2.5h，owner 确认实际 3h）
 forecasts: []
