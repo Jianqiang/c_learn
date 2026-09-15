@@ -342,6 +342,24 @@ def render(bc: dict[str, Any], s: dict[str, Any]) -> str:
     if cur:
         a(f"<h2>当前：{esc(cur['id'])} {esc(cur['name'])}</h2><div class='card now'>")
         a(f"<div class='muted'>{esc(cur['question'])}</div>")
+        if cur.get("materials"):
+            a("<h3 style='margin-top:14px'>材料</h3><table style='margin-top:6px'>")
+            a("<tr><th>状态</th><th>标题</th><th>预估</th><th>范围</th></tr>")
+            for mat in cur["materials"]:
+                done = mat.get("status") == "done"
+                pill = "<span class='pill ok'>done</span>" if done else "<span class='pill'>pending</span>"
+                title_html = esc(mat.get("title", ""))
+                if mat.get("url"):
+                    title_html = f"<a href='{esc(mat['url'])}' target='_blank'>{title_html}</a>"
+                hours = mat.get("actual_hours") or mat.get("est_hours") or "—"
+                a(f"<tr><td>{pill}</td><td>{title_html}</td><td class='mono'>{esc(hours)}h</td>"
+                  f"<td class='muted'>{esc(mat.get('scope') or '')}</td></tr>")
+            a("</table>")
+        if cur.get("anchor_tasks"):
+            a("<h3 style='margin-top:14px'>锚点任务</h3><ul>")
+            for t in cur["anchor_tasks"]:
+                a(f"<li>{esc(t)}</li>")
+            a("</ul>")
         if cur.get("remaining"):
             a("<h3 style='margin-top:14px'>剩余</h3><ul>")
             for r in cur["remaining"]:
@@ -359,6 +377,7 @@ def render(bc: dict[str, Any], s: dict[str, Any]) -> str:
             if ai.get("special"):
                 a(f"<div class='rule'><b>要点</b> {esc(ai['special'])}</div>")
         a("</div>")
+
 
     # modules table
     a("<h2>全部 module</h2><div class='card'><table>")
