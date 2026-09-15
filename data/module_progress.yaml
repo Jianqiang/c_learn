@@ -1,6 +1,6 @@
 modules:
   M0:
-    status: in_progress
+    status: done
     log:
     - date: '2026-09-08'
       hours: 2.5
@@ -28,4 +28,8 @@ modules:
       hours: 4.0
       kind: material
       note: Henderson & Clark 1990 - Architectural Innovation（含边读边做的案例分析）
+  PatchA:
+    status: in_progress
+    log: []
 forecasts: []
+

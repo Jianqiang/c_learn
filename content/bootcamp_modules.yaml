@@ -136,7 +136,7 @@ bootcamp:
     - id: M0
       name: "Technology Change → Architecture → Rent"
       question: "Constraint 如何变成 Architecture，Architecture 为什么决定谁 capture value？"
-      status: in_progress
+      status: done
       est_hours: "16"
       chain: "Constraint → Interdependency → Architecture → Bottleneck → Value Capture"
       materials:
@@ -208,7 +208,7 @@ bootcamp:
     - id: PatchA
       name: "Customer Economics"
       question: "客户为什么在乎？技术变好为什么不会自动变成 demand？"
-      status: pending
+      status: in_progress
       est_hours: "5-6"
       chain: "Customer Value → WTP/TCO/ROI → Adoption → Demand"
       rationale: "补 CEI 里最常见的推理跳跃：产品好 ≠ 客户愿意买。这是 2026-09-15 新增的 patch。"
