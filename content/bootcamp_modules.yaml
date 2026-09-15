@@ -1,33 +1,65 @@
 # Deliberate Practice Bootcamp v3 — "Build the Map" (knowledge-first) → Phase B "Build the Skill" (live investing)
 #
-# 8 module（M0-M7），知识优先：每个 module = 材料 + 一个轻量 micro exercise/quiz。
+# 9 module（M0, PatchA, M1-M7），知识优先：每个 module = 材料 + 一个轻量 micro exercise/quiz。
 # 不设逐 module 闭卷出口或强制预测配额——那些检验挪到 Phase A 结束后的 Phase B（真实候选 underwriting）。
+# 2026-09-15：补 8 个 CEI gap 中最有增量的四块——Customer Economics / Competitive Response /
+# Duration / Discriminating Evidence，另两个 gap（Ownership Bridge、Joint Scenario）以 exercise
+# 形式并入 M3/M7，不单独开课。
 
 bootcamp:
   slug: deliberate-practice-bootcamp-v3
   name: "Deliberate Practice Bootcamp v3: Build the Map → Build the Skill"
-  version: "2026-09-11-v3"
+  version: "2026-09-15-v3.1"
   mode: module
   start_date: "2026-09-07"
   timezone: "Asia/Shanghai"
   daily_hours: 5
-  total_budget_hours: 80
+  total_budget_hours: 88
 
   core_loop:
     - Theory
     - Retrieval
     - Micro-exercise
+    - Update Master Map
 
   final_chain:
     - Technology Change
-    - Architecture
-    - Rent
-    - Capital Response
-    - Financials
+    - Customer Economics
+    - Demand
+    - Supply/Competition
+    - Architecture/Rent
+    - Duration
+    - Financials/ROIIC/FCF
     - Capital Allocation
-    - Expectations
-    - Consensus/Catalyst
+    - Per-Share Value
+    - Market Expectations
+    - Variant
+    - Evidence
+    - Scenario
     - Position
+    - Update
+
+  graduation_questions:
+    note: "Phase A 的考试大纲不是「读完了多少」，是能否对一个陌生 fundamental opportunity 快速回答以下 18 问。"
+    items:
+      - "What changed?"
+      - "Why does the customer care?"
+      - "What happens to demand?"
+      - "How does supply/competition respond?"
+      - "What architecture/bottleneck controls value?"
+      - "Who captures rent?"
+      - "How long can it last?"
+      - "How does it enter financials?"
+      - "What is ROIIC/reinvestment?"
+      - "How does enterprise value reach per-share value?"
+      - "What does price imply?"
+      - "Could price be wrong about discount rates, not cashflows?"
+      - "What exactly is my variant?"
+      - "What evidence discriminates my model?"
+      - "What are coherent causal scenarios?"
+      - "How exactly do I realize return?"
+      - "How much should I own?"
+      - "What would change my mind?"
 
   design_principles:
     - id: p1
@@ -105,7 +137,7 @@ bootcamp:
       name: "Technology Change → Architecture → Rent"
       question: "Constraint 如何变成 Architecture，Architecture 为什么决定谁 capture value？"
       status: in_progress
-      est_hours: "14-15"
+      est_hours: "16"
       chain: "Constraint → Interdependency → Architecture → Bottleneck → Value Capture"
       materials:
         - ref: teece-1986
@@ -129,12 +161,12 @@ bootcamp:
           url: "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1309509"
         - ref: henderson-clark-1990
           title: "Henderson & Clark 1990 — Architectural Innovation"
-          status: pending
-          est_hours: "2-2.5"
-          priority: next
+          status: done
+          actual_hours: "4"
           scope: >
             补最大的推理缺口：从「这里有 bottleneck」跳到「所以这里 capture value」，
-            缺少「architecture 为什么变、bottleneck 能维持多久」。
+            缺少「architecture 为什么变、bottleneck 能维持多久」。owner 反馈：非常好的论文，
+            边读边做了案例分析，收获大。
           url: "https://doi.org/10.2307/2393549"
           open_copy: "http://dspace.mit.edu/bitstream/handle/1721.1/48004/generationalinno00hend.pdf?sequence=1"
       jit_pool:
@@ -157,9 +189,9 @@ bootcamp:
         - "五关框架：Asset Specificity → Bilateral Dependence → Redeployability → Bargaining Power → Observed Rent"
         - "10 家公司 Teece 判断地图（outputs/day02/04_memo_teece_ai_rent.md）"
         - "Jacobides 2006 — Benefiting from Innovation"
+        - "Henderson & Clark 1990 — Architectural Innovation（含边读边做的案例分析）"
       remaining:
-        - "★ 读 Henderson & Clark"
-        - "20-45 分钟 micro exercise：陌生系统中区分 component change / architectural change / complement / bottleneck / control / bargaining rent"
+        - "可选：如果读 Henderson & Clark 时做的案例分析已经覆盖了 component/architectural change/complement/bottleneck/control/bargaining rent 的区分，M0 材料+练习即算完成，不需要再补一个单独的 20-45min micro exercise；如果没有覆盖，才需要补做"
       exit_criteria:
         - "闭卷画出任一给定公司的 Innovation → Asset Specificity → Bilateral Dependence → Bargaining Power → Observed Rent"
         - "能区分 component innovation 与 architectural innovation，并说明后者为何让在位者失效"
@@ -172,6 +204,35 @@ bootcamp:
       note_2026_09_11_pm: >
         IBM PC Guided Lab 01（分轮隐藏证据的重项目）按 v3「知识优先，不做重项目」的方向取消。
         brief 仍留档于 outputs/m1/lab01_ibm_pc/00_brief_and_round1.md，仅作历史参考，不再是待办项。
+
+    - id: PatchA
+      name: "Customer Economics"
+      question: "客户为什么在乎？技术变好为什么不会自动变成 demand？"
+      status: pending
+      est_hours: "5-6"
+      chain: "Customer Value → WTP/TCO/ROI → Adoption → Demand"
+      rationale: "补 CEI 里最常见的推理跳跃：产品好 ≠ 客户愿意买。这是 2026-09-15 新增的 patch。"
+      materials:
+        - ref: mit-15818-pricing
+          title: "MIT Sloan 15.818 Pricing（Catherine Tucker，选读 lecture notes）"
+          status: pending
+          est_hours: "1.5-2"
+          scope: "Pricing Economic Value to the Customer / Measuring Customer Reactions to Prices / Pricing to Segment Customers；Pricing under Consumer Uncertainty 只 skim"
+          url: "https://ocw.mit.edu/courses/15-818-pricing-spring-2010/resources/"
+        - ref: mit-1401-demand
+          title: "MIT 14.01 Principles of Microeconomics（Jonathan Gruber，选段：需求侧）"
+          status: pending
+          est_hours: "2-2.5"
+          scope: "看 Lecture 1（Supply & Demand）+ Lecture 4（Demand Curves / Income-Substitution Effects）；Lecture 2-3（Preferences/Budget Constraints）只读 summary"
+          url: "https://ocw.mit.edu/courses/14-01-principles-of-microeconomics-fall-2023/video_galleries/video-lectures/"
+      anchor_tasks:
+        - "选一个具体产品（GPU / coding agent / liquid cooling 任选）：写 Current Alternative 的 Customer Economics vs New Product 的 Customer Economics，回答 incremental customer value / TCO / ROI-payback / WTP / adoption friction / price↓30%后demand为什么变化（30-45min）"
+      exit_criteria:
+        - "能把「技术变好了」拆成 WTP/TCO/ROI/adoption friction 四个可观测量，而不是直接跳到 revenue 会增长"
+      ai_usage:
+        mode: "material digest + retrieval quiz"
+        allowed: "对材料做要点摘要"
+        forbidden: "替 owner 完成 customer economics 拆解练习"
 
     - id: M1
       name: "Financial Accounting"
@@ -202,10 +263,10 @@ bootcamp:
         forbidden: "替 owner 完成 post-class tests"
 
     - id: M2
-      name: "Financial Statement → Business Economics → FCF"
-      question: "会计事实如何变成 forecast 与 valuation？"
+      name: "Financial Statement → Business Economics → FCF → Duration"
+      question: "会计事实如何变成 forecast、valuation，以及 rent 能维持多久？"
       status: pending
-      est_hours: "9-10"
+      est_hours: "10-11"
       materials:
         - ref: penman-fsa
           title: "Penman — Financial Statement Analysis and Security Valuation（选读）"
@@ -225,25 +286,40 @@ bootcamp:
           est_hours: "1.5-2"
           scope: "Introduction/Intrinsic Value, Cash Flows, Growth, Terminal Value, Value Enhancement"
           url: "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/webcastvalonline.htm"
+        - ref: mauboussin-cap
+          title: "Mauboussin & Callahan — Competitive Advantage Period: The Neglected Value Driver（2026，Duration patch）"
+          status: pending
+          est_hours: "1-1.5"
+          scope: "Value Creation = (ROIC-WACC) × Investment × Duration，重点是第三项「how long」；market-implied CAP、ROIC mean reversion、terminal-value modeling"
+          url: "https://www.morganstanley.com/im/en-sg/institutional-investor/insights/consilient-observer/the-neglected-value-driver.html"
+        - ref: mauboussin-moat
+          title: "Mauboussin & Callahan — Measuring the Moat（Duration patch，只读与已学 strategy framework 不重叠部分）"
+          status: pending
+          est_hours: "0.75-1"
+          scope: "fade / lifecycle / duration / firm-level sustainability checklist"
+          url: "https://www.morganstanley.com/im/en-us/institutional-investor/insights/consilient-observer/measuring-the-moat.html"
       anchor_tasks:
         - "拿一家熟悉公司，画 Revenue → NOPAT → Invested Capital → Incremental ROIC → Reinvestment → FCF（不搭大模型，45min）"
+        - "对同一家公司显式拆 Duration：D_D(需求) / D_A(architecture) / D_B(bottleneck-scarcity) / D_S(share) / D_R(ROIIC-rent) 五段，每段写清 fade mechanism 是什么"
       remaining:
         - "Penman 选读五个主题"
         - "Mauboussin & Callahan ROIC"
         - "Damodaran Valuation 选段"
-        - "45min micro exercise"
+        - "Mauboussin & Callahan CAP + Measuring the Moat（Duration patch）"
+        - "45min micro exercise + Duration 拆分练习"
       exit_criteria:
         - "能闭卷画出 Revenue → FCF 的完整链条并标出每一步的驱动因子"
+        - "能对任一给定公司显式拆出五段 Duration 并各给一个 fade mechanism"
       ai_usage:
         mode: "material digest + retrieval quiz"
         allowed: "提取原始报表数据；对材料做要点摘要"
-        forbidden: "替 owner 完成 ROIC 拆解练习"
+        forbidden: "替 owner 完成 ROIC 拆解或 Duration 拆分练习"
 
     - id: M3
-      name: "Management & Capital Allocation"
-      question: "FCF 赚到手之后，管理层怎样把它再配置成未来的 per-share value？"
+      name: "Management & Capital Allocation + Ownership Bridge"
+      question: "FCF 赚到手之后，管理层怎样把它再配置成未来的 per-share value？Enterprise value 创造是否真的传导到 per-share？"
       status: pending
-      est_hours: "2-2.5"
+      est_hours: "3-3.5"
       materials:
         - ref: mauboussin-capital-allocation
           title: "Mauboussin & Callahan — Capital Allocation: Results, Analysis, and Assessment（2025 更新版）"
@@ -253,19 +329,21 @@ bootcamp:
           url: "https://www.morganstanley.com/im/publication/insights/articles/article_capitalallocation.pdf"
       anchor_tasks:
         - "找一个熟悉公司：过去五年 FCF 的 100 元到底去了哪里？再问 incremental dollar 最应该去哪里（30min）"
+        - "★ Ownership Bridge（1-1.5h）：同一家公司过去五年，按 FCF → Capex/R&D → M&A → Debt → Dividend → Buyback → SBC/Issuance → Share Count 走一遍，回答 Enterprise Value Creation 是否真的传导到 Per-Share Value Creation；重点检查 buyback price 是否合理、SBC 是否吃掉 buyback、leverage 是否真正创造 equity value、M&A incremental return、dilution"
       exit_criteria:
         - "能闭卷说出六类资本配置去向（capex/R&D/M&A/divestiture/dividend/buyback）并各自的价值创造条件"
+        - "能对任一公司完成一次 Ownership Bridge，明确指出 EV creation 与 per-share value creation 是否脱节、脱节在哪一环"
       ai_usage:
         mode: "material digest + retrieval quiz"
-        allowed: "提取材料要点"
-        forbidden: "替 owner 判断某公司的 capital allocation 质量"
+        allowed: "提取材料要点；提取 Ownership Bridge 所需的原始报表数字"
+        forbidden: "替 owner 判断某公司的 capital allocation 质量或完成 Ownership Bridge 的判断部分"
 
     - id: M4
-      name: "Industry Capital Cycle & Supply Response"
-      question: "全行业的资本配置怎样毁掉或延长 rent？"
+      name: "Demand ↔ Supply → Competition → Capital Cycle"
+      question: "供给如何回应需求？竞争为什么/何时会消灭高 rent？全行业的资本配置怎样毁掉或延长 rent？"
       status: pending
-      est_hours: "8-10"
-      trainer_note: "与 M0-M3 的公司层视角互补：这里回答供给侧如何回应高 ROIC。"
+      est_hours: "13-15"
+      trainer_note: "与 M0-M3 的公司层视角互补：这里回答供给侧+竞争侧如何回应高 ROIC。2026-09-15 从纯 Capital Cycle 扩展为 Demand↔Supply→Competition→Capital Cycle。"
       materials:
         - ref: capital-returns
           title: "Chancellor (ed.) / Marathon Asset Management — Capital Returns"
@@ -273,28 +351,45 @@ bootcamp:
           est_hours: "6-8"
           scope: "Demand↑ → Scarcity → ROIC↑ → Capex↑ → Capacity↑ → Competition↑ → ROIC↓，建议基本读完"
           url: "https://www.edwardchancellor.com/books/capital-returns"
+        - ref: mit-1401-supply
+          title: "MIT 14.01 Principles of Microeconomics（Producer/Supply patch）"
+          status: pending
+          est_hours: "2-2.5"
+          scope: "看 Lecture 5（Production Theory）+ Lecture 6（Costs）+ Lecture 9（Supply & Demand / Consumer & Producer Surplus）；Lecture 7-8（Competition）只看 summary，陌生再看视频。掌握 MC(Q)、SR≠LR supply、fixed cost≠marginal cost、Price>LRAC→Entry"
+          url: "https://ocw.mit.edu/courses/14-01-principles-of-microeconomics-fall-2023/video_galleries/video-lectures/"
         - ref: mit-15772j
           title: "MIT 15.772J D-Lab: Supply Chains（选读）"
           status: pending
-          est_hours: "1.5-2"
-          scope: "只学物理 supply response 的语言：demand forecasting / capacity planning / process analysis / inventory / supply coordination"
+          est_hours: "1-1.5"
+          scope: "只学物理 supply response 的语言：capacity / utilization / throughput / yield / inventory / cycle time"
           url: "https://ocw.mit.edu/courses/15-772j-d-lab-supply-chains-fall-2014/"
+        - ref: mit-14271-competition
+          title: "MIT 14.271 Industrial Organization I（Glenn Ellison，选 6 讲）"
+          status: pending
+          est_hours: "4-5"
+          scope: "Lecture 5-6（Static Competition / Differentiation）+ Lecture 16-17（Entry）+ Lecture 18-19（Strategic Investment），分别回答 Existing Rivalry / New Entry / Incumbent-Entrant Strategic Response；之前认真学过的部分直接 skip"
+          url: "https://ocw.mit.edu/courses/14-271-industrial-organization-i-fall-2022/video_galleries/lecture-videos/"
+      anchor_tasks:
+        - "回到 AI universe：算力 capex 的 supply response 会在何时压缩 rent？"
+        - "★ 固定问题：每次发现高 rent，自动问 If everyone sees this rent, why won't competition destroy it？逐条检查 scale / sunk cost / switching / learning / network / standards / capacity / vertical foreclosure / complementary assets"
       remaining:
         - "Capital Returns 精读"
+        - "MIT 14.01 Producer/Supply patch"
         - "MIT D-Lab Supply Chains 选读"
-        - "回到 AI universe：算力 capex 的 supply response 会在何时压缩 rent？"
+        - "MIT 14.271 IO 选 6 讲"
       exit_criteria:
         - "能预测竞争与资本反应，而非只外推需求"
+        - "对任一高 rent case，能用 8 条 barrier 清单（scale/sunk cost/switching/learning/network/standards/capacity/vertical foreclosure）判断竞争侵蚀速度"
       ai_usage:
         mode: "material digest + retrieval quiz"
         allowed: "提取材料要点"
-        forbidden: "替 owner 划 supply cycle 的 regime"
+        forbidden: "替 owner 划 supply cycle 的 regime 或做竞争侵蚀速度判断"
 
     - id: M5
-      name: "Price → Expectations → Alpha"
-      question: "当前价格要求什么必须为真？"
+      name: "Expectations Investing + Discount-Rate Side"
+      question: "当前价格要求什么必须为真？价格变化是 cashflow news 还是 discount-rate news？"
       status: pending
-      est_hours: "9-11"
+      est_hours: "11-13"
       priority: highest
       rationale: "全 bootcamp 最高优先级投资书；owner 已有的 PLTR/CRM/腾讯判断需要用这里的方法量化"
       materials:
@@ -308,25 +403,33 @@ bootcamp:
           title: "Expectations Investing — Tutorials 2-8"
           status: pending
           est_hours: "3"
-          scope: "sales / margins / working capital / fixed capital / cash taxes / cost of capital / price-implied expectations"
+          scope: "sales / margins / working capital / fixed capital / cash taxes / cost of capital / price-implied expectations；Tutorial 8 汇总为完整 PIE analysis"
           url: "https://www.expectationsinvesting.com/tutorials"
+        - ref: damodaran-discount-rate
+          title: "Damodaran — Valuation/Corporate Finance Online Classes（Discount-Rate patch，只看选段）"
+          status: pending
+          est_hours: "2-2.5"
+          scope: "Risk-Free Rate / Equity Risk Premium / risk-beta intuition / bottom-up beta intuition / cost of debt-cost of capital overview，不钻 CAPM 数学"
+          url: "https://pages.stern.nyu.edu/adamodar/New_Home_Page/webcastcfonline.htm"
       anchor_tasks:
         - "PLTR：反解当前价格隐含的 revenue growth / margin / duration，与已有 memo 的「rent 已 consensus」判断对照"
         - "CRM：反解 Agentforce 若为 defensive vs 新 rent layer 两种情形的隐含价格差"
         - "腾讯：AI capability → Product KPI → advertiser economics → FCF → value，写 Reality/Consensus/Price 三栏"
+        - "★ 对上述任一价格变化，显式拆 Price Change = Cashflow News + Discount-Rate News，不要把所有跌价都直接解释成 earnings expectation 下调"
       exit_criteria:
         - "「贵不贵」被「价格要求什么必须为真」替代"
         - "能把「市场已 price in」量化为隐含增长/利润率/duration"
+        - "能对一次真实价格变化区分 cashflow news 与 discount-rate news 各自的贡献"
       ai_usage:
         mode: "solver, not valuator"
         allowed: "写 reverse DCF solver，暴露哪个变量最敏感；保存带时间戳 consensus snapshot"
         forbidden: "给「合理估值」或目标价；事后修改 snapshot"
 
     - id: M6
-      name: "Professional Equity Research OS"
-      question: "专业研究流程如何把证据变成可结算的 stock call？"
+      name: "Professional Equity Research OS + Causal Evidence"
+      question: "专业研究流程如何把证据变成可结算的 stock call？evidence 支持 thesis 是否等于 evidence 证明 thesis？"
       status: pending
-      est_hours: "7-9"
+      est_hours: "9-11"
       rationale_check: >
         owner 已有自建研究 pipeline（PITDataService / wiki-ingest / bounded_evidence_pass /
         audit_forecast_decision）。读之前先明确 Valentine 这本书具体补哪个缺口，
@@ -335,32 +438,44 @@ bootcamp:
         - ref: valentine-research
           title: "Valentine — Best Practices for Equity Research Analysts（选读 Ch.7-10, 17-20）"
           status: pending
-          est_hours: "5-7"
+          est_hours: "5-6"
           scope: "Evidence side：critical factors / proprietary research / interviewing；Decision side：financial models / scenario forecasts / valuation / stock calls"
           url: "https://www.cfainstitute.org/sites/default/files/-/media/documents/support/research-challenge/challenge/best-practices-equity-sample.pdf"
         - ref: damodaran-invphil
           title: "Damodaran — Investment Philosophies Webcasts #22-26"
           status: pending
           est_hours: "1.25"
-          scope: "information trading / analysts / earnings-estimate revisions / earnings surprise / information diffusion"
+          scope: "information trading / analysts / earnings-estimate revisions / earnings surprise / information diffusion；目的：Reality → Forecast Delta → Consensus Revision → Price"
           url: "https://pages.stern.nyu.edu/~adamodar/New_Home_Page/webcastinvphil2025.htm"
+        - ref: causal-inference-neal
+          title: "Brady Neal — Introduction to Causal Inference（选读，Causal Evidence patch）"
+          status: pending
+          est_hours: "2.5-3"
+          scope: >
+            Motivation / Potential Outcomes（只建 intuition）/ Graphical Models-DAG / Structural Causal
+            Models / Backdoor-confounding / sensitivity to unobserved confounding（浅看）。不进 estimator zoo。
+            目标：从 "evidence supports thesis" 升级为 "这份证据能区分哪些 causal model"。
+          url: "https://www.bradyneal.com/causal-inference-course"
         - ref: compliance-primer
           title: "Compliance primer：CFA Mosaic Theory + SEC Regulation FD basics"
           status: pending
-          est_hours: "0.75"
+          est_hours: "0.5"
           scope: "primary / expert / channel research 的边界，不是学证券法"
+      anchor_tasks:
+        - "★ Discriminating Evidence exercise：写 Model A: A→B→C 和 Model B: A→D→C 两个 causal model，为一个真实判断找一个能区分两者的 Discriminating Observable，而不是继续找更多支持 thesis 的材料"
       exit_criteria:
         - "能说出自己当前 pipeline 里对应 Valentine 框架的哪一层缺失或已覆盖"
+        - "对一个真实判断，能写出至少两个互斥的 causal model 并指出哪个证据能区分它们"
       ai_usage:
         mode: "material digest + gap mapping"
         allowed: "把材料框架与 owner 已有 pipeline 逐项对照，标出重叠与缺口"
-        forbidden: "替 owner 判断该不该读完整本书"
+        forbidden: "替 owner 判断该不该读完整本书，或代做 Discriminating Evidence 练习"
 
     - id: M7
-      name: "Forecasting → Portfolio Decision"
-      question: "不确定性如何变成概率、赔率与仓位？"
+      name: "Forecasting → Portfolio → Joint Scenarios"
+      question: "不确定性如何变成概率、赔率与仓位？我到底怎么赚到这笔钱？"
       status: pending
-      est_hours: "6-7"
+      est_hours: "8-9"
       materials:
         - ref: superforecasting
           title: "Tetlock & Gardner — Superforecasting（快速/选择性读）"
@@ -371,17 +486,25 @@ bootcamp:
         - ref: cfa-portfolio-construction
           title: "CFA Institute — Active Equity Investing: Portfolio Construction（选读 summary/sizing/risk-budgeting）"
           status: pending
-          est_hours: "1-1.5"
+          est_hours: "1"
           scope: "security analysis 识别标的 vs portfolio construction 决定权重；sizing / concentration / correlation / liquidity / risk budget / factor overlap"
           url: "https://www.cfainstitute.org/insights/professional-learning/refresher-readings/2026/active-equity-investing-portfolio-construction"
       anchor_tasks:
         - "写 10 个可结算概率预测（Phase A 毕业产出）"
+        - >
+          ★ Joint Causal Scenario / Realization exercise（final integration，2-3h）：选两只真实股票，
+          不做机械的 Bear/Base/Bull 数字表，而是建立三个 coherent causal world：
+          Architecture → Customer ROI → Demand → Supply/Competitor Response → Share/Price/Margin →
+          ROIIC/Reinvestment → Duration → FCF_T + Market Expectations_T → P_T → IRR。
+          最后必须明确：靠 cash realization（dividend/buyback/debt reduction）还是
+          expectation realization（earnings revision/re-rating），还是两者共同作用。
       exit_criteria:
         - "10 条预测全部通过 forecast linter（指标/阈值/时间窗/resolution source 齐全）"
+        - "对两只真实股票完成 Joint Causal Scenario，且能明确说出 cash realization 与 expectation realization 各自的贡献路径"
       ai_usage:
         mode: "forecast linter"
         allowed: "拒绝不可结算的预测"
-        forbidden: "评价预测内容或概率高低"
+        forbidden: "评价预测内容或概率高低；代做 Joint Scenario 的判断部分"
       safety: "只记录 decision tape，不下单、不改变实际仓位"
 
   second_wave:

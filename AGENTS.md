@@ -29,21 +29,24 @@ owner 具备深厚技术与财务背景，能读代码、读报表、自己搜�
 
 ---
 
-## 1. Phase A 结构（M0-M7）
+## 1. Phase A 结构（M0, PatchA, M1-M7）
 
-8 个 module，知识优先，每个 module 配一个轻量 micro exercise / quiz，不设逐 module 闭卷出口或强制预测配额。
+9 个 module，知识优先，每个 module 配一个轻量 micro exercise / quiz，不设逐 module 闭卷出口或强制预测配额。
 详见 `content/bootcamp_modules.yaml`。
 
 | Module | 主题 |
 |---|---|
 | M0 | Technology Change → Architecture → Rent（in progress） |
+| PatchA | Customer Economics（2026-09-15 新增：WTP/TCO/ROI/adoption） |
 | M1 | Financial Accounting |
-| M2 | Financial Statement → Business Economics → FCF |
-| M3 | Management & Capital Allocation |
-| M4 | Industry Capital Cycle & Supply Response |
-| M5 | Price → Expectations → Alpha |
-| M6 | Professional Equity Research OS |
-| M7 | Forecasting → Portfolio Decision（Phase A 收尾：10 条可结算预测入 Forecast Ledger） |
+| M2 | Financial Statement → Business Economics → FCF → Duration |
+| M3 | Management & Capital Allocation + Ownership Bridge |
+| M4 | Demand ↔ Supply → Competition → Capital Cycle |
+| M5 | Expectations Investing + Discount-Rate Side |
+| M6 | Professional Equity Research OS + Causal Evidence |
+| M7 | Forecasting → Portfolio → Joint Scenarios（Phase A 收尾：10 条可结算预测 + 两只真实股票的 Joint Causal Scenario） |
+
+Phase A 的毕业标准不是"读完了多少"，是能否对一个陌生 fundamental opportunity 快速回答 `bootcamp_modules.yaml` 里 `graduation_questions` 的 18 个问题（What changed / Why does the customer care / ... / What would change my mind）。
 
 Phase A 完成后进入 **Phase B**：80% 真实候选 underwriting + 20% JIT 理论，真正的闭卷/迁移/下注检验都在这里做，不在 Phase A 内部逐 module 设卡。
 
